@@ -47,20 +47,20 @@ export function Record() {
     if (Date.now() - startedAt.current < 600) { setNote('Hold a little longer while you speak.'); return; }
     const uri = recorder.uri;
     if (!uri) { setNote('Nothing was recorded.'); return; }
-    setBusy(true); setNote('');
+    setBusy(true); setNote(''); useApp.getState().setProcessing('Processing');
     try {
       const b64 = await readAsStringAsync(uri, { encoding: 'base64' });
       const { text } = await transcribeAudio(b64, 'audio/m4a');
       setBusy(false);
-      if (!text.trim()) { setNote('I did not catch that. Try again.'); return; }
+      if (!text.trim()) { useApp.getState().setProcessing(null); setNote('I did not catch that. Try again.'); return; }
       await fileText(text, true);
-    } catch (e: any) { setBusy(false); setNote(e.message || 'Could not process the recording.'); }
+    } catch (e: any) { setBusy(false); useApp.getState().setProcessing(null); setNote(e.message || 'Could not process the recording.'); }
   }
 
   /** Raw speech is never shown or saved: only the AI-polished text is kept (handoff 3.2). */
   async function fileText(raw: string, fromVoice = false) {
     if (!raw || busy && !fromVoice) return;
-    setBusy(true); setNote('');
+    setBusy(true); setNote(''); useApp.getState().setProcessing('Processing');
     try {
       const filed = await fileRecording(raw, ideas);
       if (!filed.text) { setNote('No idea found in that. Nothing was saved.'); setTyped(''); return; }
@@ -71,7 +71,7 @@ export function Record() {
       if (fromVoice) { setNote(`${e.message} Your recording was not saved. Try again or type it.`); return; }
       // Typed text: keep the person's words rather than lose them.
       addIdea(fallbackTitle(raw), raw); setTyped(''); setNote(`${e.message} Saved as a new idea without AI cleanup.`);
-    } finally { setBusy(false); }
+    } finally { setBusy(false); useApp.getState().setProcessing(null); }
   }
 
   function choose(id: string | null) {

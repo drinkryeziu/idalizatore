@@ -15,8 +15,8 @@ export function Ideas({ analyzedOnly = false }: { analyzedOnly?: boolean }) {
   async function analyze(id: string) {
     const idea = useApp.getState().ideas.find((x) => x.id === id);
     if (!idea || busyId) return;
-    setBusyId(id); setErr('');
-    try { setReport(id, await analyzeIdea(idea)); openResult(id); } catch (e: any) { setErr(e.message); } finally { setBusyId(null); }
+    setBusyId(id); setErr(''); useApp.getState().setProcessing('Analyzing');
+    try { setReport(id, await analyzeIdea(idea)); openResult(id); } catch (e: any) { setErr(e.message); } finally { setBusyId(null); useApp.getState().setProcessing(null); }
   }
   const [q, setQ] = useState(''), [open, setOpen] = useState<string | null>(null), [edit, setEdit] = useState<string | null>(null), [draft, setDraft] = useState('');
   const list = ideas.filter((i) => (!analyzedOnly || i.report) && (i.title + i.transcript).toLowerCase().includes(q.toLowerCase()));

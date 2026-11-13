@@ -1,4 +1,6 @@
-import { Linking, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Print from 'expo-print';
 import { Button, PageTitle } from '../components/ui';
 import { bandColor, color, radius, scoreBand, space, type } from '../theme';
 import { useApp } from '../store';
@@ -9,6 +11,13 @@ const search = (q: string) => Linking.openURL('https://www.google.com/search?q='
 function asText(r: Report, title: string) {
   const body = r.sections.map((s) => s.title + '\n' + s.blocks.map((b) => (b.kind === 'list' ? b.items.map((i) => '- ' + i).join('\n') : b.text)).join('\n')).join('\n\n');
   return `${title}\n${r.score}% ${r.verdict ?? ''}\n\n${body}`;
+}
+
+const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+function asHtml(r: Report, title: string) {
+  const body = r.sections.map((s) => `<h2>${esc(s.title)}</h2>` + s.blocks.map((b) => (b.kind === 'list' ? '<ul>' + b.items.map((i) => `<li>${esc(i)}</li>`).join('') + '</ul>' : `<p>${b.kind === 'lead' ? '<b>' : ''}${esc(b.text)}${b.kind === 'lead' ? '</b>' : ''}</p>`)).join('')).join('');
+  const dir = ['ar', 'he', 'fa', 'ur'].includes((r.lang || '').slice(0, 2)) ? 'rtl' : 'ltr';
+  return `<html dir="${dir}"><body style="font-family:-apple-system,Helvetica;padding:32px;color:#252525"><h1 style="color:#7d0099">${esc(title)}</h1><h3>${r.score}% ${esc(r.verdict ?? '')}</h3><p><i>AI estimate, not a promise.</i></p>${body}</body></html>`;
 }
 
 export function Result() {
@@ -97,7 +106,12 @@ export function Result() {
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: space[3], padding: space[4], borderTopWidth: 1, borderTopColor: color.track }}>
         <Button style={{ flex: 1 }} tone="ghost" label="Back" onPress={() => go('ideas')} />
-        <Button style={{ flex: 1 }} label="Share report" onPress={() => Share.share({ message: asText(r, r.title || idea.title) })} />
+        <Button style={{ flex: 1 }} tone="ghost" label="Email" onPress={async () => {
+          const text = asText(r, r.title || idea.title);
+          await Clipboard.setStringAsync(text); // mailto bodies are length-limited, so the full text is also copied
+          Linking.openURL(`mailto:?subject=${encodeURIComponent(r.title || idea.title)}&body=${encodeURIComponent(text.slice(0, 1500))}`);
+        }} />
+        <Button style={{ flex: 1 }} label="Print" onPress={() => Print.printAsync({ html: asHtml(r, r.title || idea.title) })} />
       </View>
     </View>
   );

@@ -5,6 +5,7 @@ import { useFonts, FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold
 import { color, space } from './src/theme';
 import { useApp } from './src/store';
 import { IconButton } from './src/components/ui';
+import { Processing } from './src/components/Processing';
 import { MenuDrawer } from './src/components/MenuDrawer';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { Record } from './src/screens/Record';
@@ -14,7 +15,7 @@ import { Settings } from './src/screens/Settings';
 
 export default function App() {
   const [fontsLoaded] = useFonts({ FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic });
-  const { user, route, setMenu } = useApp();
+  const { user, route, setMenu, processing } = useApp();
   const hydrated = useApp.persist.hasHydrated();
 
   if (!fontsLoaded || !hydrated) {
@@ -25,7 +26,7 @@ export default function App() {
   const onViolet = route === 'record';
   return (
     <SafeAreaProvider>
-      <StatusBar style={onViolet ? 'light' : 'dark'} />
+      <StatusBar style={onViolet || processing ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: onViolet ? color.violet : color.paper }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: space[2] }}>
           <IconButton name="menu" label="Open menu" tint={onViolet ? color.paper : color.violet} onPress={() => setMenu(true)} />
@@ -37,6 +38,7 @@ export default function App() {
         {route === 'settings' && <Settings />}
       </SafeAreaView>
       <MenuDrawer />
+      {processing ? <Processing label={processing} /> : null}
     </SafeAreaProvider>
   );
 }

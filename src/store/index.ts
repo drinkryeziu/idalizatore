@@ -15,6 +15,8 @@ type State = {
   route: Route;
   menuOpen: boolean;
   resultId: string | null;
+  processing: string | null;
+  setProcessing: (label: string | null) => void;
   openResult: (id: string) => void;
   setReport: (id: string, report: Report) => void;
   signIn: (name: string, email: string, storage: StorageChoice) => void;
@@ -31,7 +33,8 @@ type State = {
 export const useApp = create<State>()(
   persist(
     (set) => ({
-      user: null, ideas: [], route: 'record', menuOpen: false, resultId: null,
+      user: null, ideas: [], route: 'record', menuOpen: false, resultId: null, processing: null,
+      setProcessing: (processing) => set({ processing }),
       openResult: (id) => set({ resultId: id, route: 'result', menuOpen: false }),
       setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false } : i) })),
       // TODO(backend): replace with real auth (handoff section 8). This only keeps a local profile.

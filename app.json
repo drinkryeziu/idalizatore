@@ -1,13 +1,17 @@
 {
   "expo": {
-    "name": "scaffold",
-    "slug": "scaffold",
+    "name": "Idealizator",
+    "slug": "idealizator",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.idealizator.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Idealizator records your voice so you can speak your ideas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,6 +24,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      "expo-audio"
+    ]
   }
 }

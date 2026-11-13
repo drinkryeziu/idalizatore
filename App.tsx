@@ -1,20 +1,40 @@
+import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts, FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic } from '@expo-google-fonts/fira-sans';
+import { color, space } from './src/theme';
+import { useApp } from './src/store';
+import { IconButton } from './src/components/ui';
+import { MenuDrawer } from './src/components/MenuDrawer';
+import { AuthScreen } from './src/screens/AuthScreen';
+import { Record } from './src/screens/Record';
+import { Ideas } from './src/screens/Ideas';
+import { Settings } from './src/screens/Settings';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic });
+  const { user, route, setMenu } = useApp();
+  const hydrated = useApp.persist.hasHydrated();
+
+  if (!fontsLoaded || !hydrated) {
+    return <View style={{ flex: 1, backgroundColor: color.violet, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={color.paper} /></View>;
+  }
+  if (!user) return <SafeAreaProvider><StatusBar style="dark" /><AuthScreen /></SafeAreaProvider>;
+
+  const onViolet = route === 'record';
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <StatusBar style={onViolet ? 'light' : 'dark'} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: onViolet ? color.violet : color.paper }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: space[2] }}>
+          <IconButton name="menu" label="Open menu" tint={onViolet ? color.paper : color.violet} onPress={() => setMenu(true)} />
+        </View>
+        {route === 'record' && <Record />}
+        {route === 'ideas' && <Ideas />}
+        {route === 'analyzed' && <Ideas analyzedOnly />}
+        {route === 'settings' && <Settings />}
+      </SafeAreaView>
+      <MenuDrawer />
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

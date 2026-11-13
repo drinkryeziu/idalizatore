@@ -30,3 +30,6 @@ Server tests: `cd server && npm test`.
 Up to 4 images per idea (shrunk to 1600 px JPEG, kept on the iPhone, sent to the AI on Analyze, not synced yet).
 Terms of Use and Privacy Policy screens are in Settings and on sign-up (`src/legal.ts`; sample text, needs lawyer review).
 First run on a real iPhone: see [docs/FIRST-RUN.md](docs/FIRST-RUN.md) and `./scripts/dev.sh`.
+
+## See it on your Mac
+`npx expo start --web` opens it in the browser (typing, screens and layout work; voice, camera and Keychain need the iPhone).

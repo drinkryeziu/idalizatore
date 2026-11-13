@@ -9,6 +9,8 @@ export type User = { id: string; name: string; email: string; storage: StorageCh
 export type Route = 'record' | 'ideas' | 'analyzed' | 'settings';
 export const ROUTE_PATH: Record<Route, string> = { record: '/', ideas: '/ideas', analyzed: '/analyzed', settings: '/settings' };
 export const routeFromPath = (p: string): Route | null => (Object.keys(ROUTE_PATH) as Route[]).find((r) => ROUTE_PATH[r] === p) ?? null;
+/** The main screen a path belongs to (a report belongs to Analyzed Ideas). Settings and Plan & billing are not "work" screens, so they give null. */
+export const topOf = (p: string): string | null => (p === '/' || p === '/ideas' || p === '/analyzed' ? p : p.startsWith('/result') ? '/analyzed' : null);
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 /** Messages that report a problem get the white-with-red-ring warning style. */
@@ -50,6 +52,12 @@ type State = {
   signedOut: () => void;
   wipeAll: () => void;
   go: (r: Route) => void;
+  /** Where the app is now (kept by the root layout) and the last main screen before Settings was opened. */
+  path: string;
+  setPath: (p: string) => void;
+  from: string | null;
+  /** Close Settings: back to the screen the person was working on. */
+  closeSettings: () => void;
   setMenu: (open: boolean) => void;
   addIdea: (title: string, transcript: string) => string;
   appendToIdea: (id: string, text: string) => void;
@@ -62,9 +70,9 @@ type State = {
 
 export const useApp = create<State>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '',
-      menuOpen: false, processing: null, recovery: false, toast: null, choice: null, openId: null, target: null,
+      menuOpen: false, path: '/', from: null, processing: null, recovery: false, toast: null, choice: null, openId: null, target: null,
       say: (text, warn) => { clearTimeout(toastTimer); set({ toast: { text, warn: warn ?? WARN.test(text) } }); toastTimer = setTimeout(() => set({ toast: null }), 4200); },
       clearToast: () => { clearTimeout(toastTimer); set({ toast: null }); },
       setChoice: (choice) => set({ choice }),
@@ -83,7 +91,14 @@ export const useApp = create<State>()(
       signedOut: () => set((s) => ({ user: null, menuOpen: false, processing: null,
         ...(s.user?.storage === 'device' ? {} : { ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '' }) })),
       wipeAll: () => set({ user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '', menuOpen: false, processing: null }),
-      go: (route) => { set({ menuOpen: false }); router.navigate(ROUTE_PATH[route] as any); },
+      setPath: (path) => set({ path }),
+      // Menu jumps replace the page instead of stacking history, so Back never loops through the menu.
+      go: (route) => {
+        const top = topOf(get().path);
+        set({ menuOpen: false, ...(top ? { from: top } : {}) });
+        if (get().path !== ROUTE_PATH[route]) router.replace(ROUTE_PATH[route] as any);
+      },
+      closeSettings: () => router.replace((get().from ?? '/') as any),
       setMenu: (menuOpen) => set({ menuOpen }),
       addIdea: (title, transcript) => {
         const now = stamp(), id = uid();

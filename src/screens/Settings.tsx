@@ -30,7 +30,7 @@ export function Settings() {
   const [del, setDel] = useState<{ pw: string; err: string } | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { fetchPlan().then((p) => setPlan(p.plan)).catch(() => {}); }, []);
-  const previous = () => (router.canGoBack() ? router.back() : router.navigate('/'));
+  const previous = useApp((s) => s.closeSettings);
   if (!user) return null;
   if (legal) return <Legal doc={legal} onBack={() => setLegal(null)} />;
 

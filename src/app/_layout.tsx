@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, View, useWindowDimensions } from 'react-native';
-import { Slot, router } from 'expo-router';
+import { Slot, router, usePathname } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -45,6 +45,8 @@ export default function RootLayout() {
   const hydrated = useApp.persist.hasHydrated();
   const [ready, setReady] = useState(false);
   const signedIn = !!user;
+  const pathname = usePathname();
+  useEffect(() => { useApp.getState().setPath(pathname); }, [pathname]); // lets the menu remember the last screen before Settings
 
   // Read the saved session once; a saved profile without a session means the person must sign in again.
   useEffect(() => {

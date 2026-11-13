@@ -23,7 +23,8 @@ export function Billing() {
   useEffect(() => { fetchPlan().then(setCur).catch(() => {}); }, []);
   const plan = planOf(cur.plan);
   const pct = cur.limit ? Math.min(100, Math.round((cur.used / cur.limit) * 100)) : 100;
-  const back = () => (choose ? setChoose(null) : router.canGoBack() ? router.back() : router.navigate('/settings'));
+  // Plan & billing belongs to Settings: Back from the chooser returns to the overview, Back from the overview returns to Settings.
+  const back = () => (choose ? setChoose(null) : router.replace('/settings'));
 
   return (
     <Screen tone="paper">

@@ -4,9 +4,15 @@ import { Slot, router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { FiraSans_300Light_Italic, FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_700Bold_Italic, useFonts } from '@expo-google-fonts/fira-sans';
-import { Caveat_500Medium } from '@expo-google-fonts/caveat';
-import { FiraCode_400Regular } from '@expo-google-fonts/fira-code';
+import { useFonts } from 'expo-font';
+// Import each weight on its own: the package roots pull in every weight and bloat the bundle (45 font files instead of 7).
+import { FiraSans_300Light_Italic } from '@expo-google-fonts/fira-sans/300Light_Italic';
+import { FiraSans_400Regular } from '@expo-google-fonts/fira-sans/400Regular';
+import { FiraSans_500Medium } from '@expo-google-fonts/fira-sans/500Medium';
+import { FiraSans_600SemiBold } from '@expo-google-fonts/fira-sans/600SemiBold';
+import { FiraSans_700Bold_Italic } from '@expo-google-fonts/fira-sans/700Bold_Italic';
+import { Caveat_500Medium } from '@expo-google-fonts/caveat/500Medium';
+import { FiraCode_400Regular } from '@expo-google-fonts/fira-code/400Regular';
 import { color } from '../theme';
 import { useApp } from '../store';
 import { handleAuthUrl, hasSession, initSession, refreshMe } from '../api';

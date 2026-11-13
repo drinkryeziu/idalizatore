@@ -24,3 +24,5 @@ export const fileRecording = (transcript: string, ideas: Idea[], targetId?: stri
   post<Filed>('/file', { transcript, targetId, ideas: ideas.map((i) => ({ id: i.id, title: i.title, summary: i.transcript.replace(/\s+/g, ' ').slice(0, 320) })) });
 
 export const analyzeIdea = (idea: Idea) => post<Report>('/analyze', { text: idea.transcript });
+
+export const transcribeAudio = (audioBase64: string, mimeType: string) => post<{ text: string }>('/transcribe', { audio: audioBase64, mimeType });

@@ -28,7 +28,12 @@
     "plugins": [
       "expo-font",
       "expo-secure-store",
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Idealizator records your voice so you can speak your ideas."
+        }
+      ]
     ]
   }
 }

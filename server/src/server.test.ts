@@ -65,4 +65,17 @@ test('rate limit blocks after max', () => {
   assert.equal(rateLimit('rl', 2, 1000, 2000), true);
 });
 
+test('/transcribe returns text from the provider', async () => {
+  process.env.OPENAI_API_KEY = 'test';
+  const saved = globalThis.fetch;
+  globalThis.fetch = (async (url: any, init: any) => String(url).includes('openai.com')
+    ? new Response(JSON.stringify({ text: ' hello roof ' }), { status: 200 })
+    : saved(url, init)) as typeof fetch;
+  const port = (server.address() as AddressInfo).port;
+  const res = await fetch(`http://127.0.0.1:${port}/transcribe`, { method: 'POST', headers: { authorization: 'Bearer u3' }, body: JSON.stringify({ audio: Buffer.from('abc').toString('base64'), mimeType: 'audio/m4a' }) });
+  const j: any = await res.json();
+  globalThis.fetch = saved;
+  assert.equal(j.text, 'hello roof');
+});
+
 test.after(() => server.close());

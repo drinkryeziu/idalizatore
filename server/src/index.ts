@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { filePrompt, reportPrompt } from '../../src/ai/prompts.ts';
 import { parseFiled, parseReport } from '../../src/ai/parse.ts';
+import { transcribe } from './transcribe.ts';
 import { complete } from './claude.ts';
 import { analyzeLimitFor, analyzeUsed, countAnalyze, rateLimit } from './limits.ts';
 
@@ -26,6 +27,13 @@ export const server = createServer(async (req, res) => {
     if (!u) return send(res, 401, { error: 'Sign in required.' });
     if (!rateLimit(u.id)) return send(res, 429, { error: 'Too many requests. Wait a minute.' });
     const body = await readJson(req);
+
+    if (req.url === '/transcribe') {
+      const b64 = String(body.audio ?? '');
+      if (!b64) return send(res, 400, { error: 'No audio.' });
+      const text = await transcribe(Buffer.from(b64, 'base64'), String(body.mimeType || 'audio/m4a'));
+      return send(res, 200, { text });
+    }
 
     if (req.url === '/file') {
       const raw = String(body.transcript ?? '').slice(0, 20_000);

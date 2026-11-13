@@ -1,5 +1,5 @@
 import { AppState } from 'react-native';
-import { hasToken, syncRequest } from './api';
+import { hasSession, syncRequest } from './api';
 import { useApp } from './store';
 
 let running = false, again = false;
@@ -7,7 +7,7 @@ let running = false, again = false;
 /** Push what changed here, pull what changed elsewhere. Skipped when ideas are kept only on this iPhone. */
 export async function syncNow(): Promise<void> {
   const { user } = useApp.getState();
-  if (!user || user.storage === 'device' || !hasToken()) return;
+  if (!user || user.storage === 'device' || !hasSession()) return;
   if (running) { again = true; return; }
   running = true;
   try {

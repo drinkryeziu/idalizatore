@@ -41,6 +41,7 @@
           "cameraPermission": "Idealizator lets you take a photo to attach to your idea."
         }
       ]
-    ]
+    ],
+    "scheme": "idealizator"
   }
 }

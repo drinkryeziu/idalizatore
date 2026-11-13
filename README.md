@@ -21,9 +21,9 @@ Typed ideas are filed by the AI (new / existing / "Where should this go?" sheet)
 Voice needs `OPENAI_API_KEY` in `server/.env` (model via `TRANSCRIBE_MODEL`; whisper-1 is deprecated). The microphone works in Expo Go on a real iPhone, not the web preview.
 
 ## Accounts and sync
-Real accounts: email and password (scrypt hashes), session token in the iOS Keychain, email confirmation link, reset code by email,
-change password, delete account. Without `RESEND_API_KEY` the server prints emails in its log; with `REQUIRE_VERIFIED=0` you can skip confirmation while developing.
-Sync (`POST /sync`) is last-write-wins per idea and runs when Settings storage is "On our server" or "Both". Images are not synced yet.
+Accounts use Supabase Auth (session in the iOS Keychain); synced ideas, profiles and monthly limits live in Supabase tables with row-level security.
+Our server in `server/` only does AI (filing, analysis, transcription) and checks the person's Supabase token. See [docs/SUPABASE.md](docs/SUPABASE.md) for the one-time dashboard steps.
+Sync is last-write-wins per idea and runs when Settings storage is "On our server" or "Both". Images are not synced yet.
 Server tests: `cd server && npm test`.
 
 ## Images, legal, first run

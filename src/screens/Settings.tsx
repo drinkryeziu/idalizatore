@@ -48,7 +48,7 @@ export function Settings() {
   if (legal) return <Legal inline doc={legal} onBack={() => setLegal(null)} />;
 
   async function change() {
-    try { await changePassword(cur, next); setCur(''); setNext(''); setPwMsg({ ok: true, text: 'Password changed. Other devices were signed out.' }); }
+    try { await changePassword(cur, next); setCur(''); setNext(''); setPwMsg({ ok: true, text: 'Password changed.' }); }
     catch (e: any) { setPwMsg({ ok: false, text: e.message }); }
   }
   async function remove() {
@@ -95,7 +95,7 @@ export function Settings() {
       <Button label="Privacy Policy" tone="ghost" onPress={() => setLegal(PRIVACY)} />
 
       <H>Delete account</H>
-      <Text style={[type.meta, { color: color.inkSoft }]}>Removes your account and all your ideas from our server and from this iPhone. This cannot be undone.</Text>
+      <Text style={[type.meta, { color: color.inkSoft }]}>Removes your Idealizator profile and all your ideas from our server and from this iPhone. This cannot be undone. Your sign-in email stays in the shared login system; ask support to remove it too.</Text>
       {delOpen ? (
         <>
           <Field label="Enter your password to confirm" value={delPw} onChangeText={setDelPw} secureTextEntry error={delErr} />

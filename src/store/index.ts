@@ -23,6 +23,9 @@ type State = {
   menuOpen: boolean;
   resultId: string | null;
   processing: string | null;
+  /** True while the person has opened a password-reset link and must choose a new password. */
+  recovery: boolean;
+  setRecovery: (v: boolean) => void;
   setProcessing: (label: string | null) => void;
   openResult: (id: string) => void;
   setReport: (id: string, report: Report) => void;
@@ -45,7 +48,8 @@ export const useApp = create<State>()(
   persist(
     (set) => ({
       user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '',
-      route: 'record', menuOpen: false, resultId: null, processing: null,
+      route: 'record', menuOpen: false, resultId: null, processing: null, recovery: false,
+      setRecovery: (recovery) => set({ recovery }),
       setProcessing: (processing) => set({ processing }),
       openResult: (id) => set({ resultId: id, route: 'result', menuOpen: false }),
       setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false, updatedAt: stamp() } : i) })),

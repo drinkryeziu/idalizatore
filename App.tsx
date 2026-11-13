@@ -5,12 +5,13 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts, FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic } from '@expo-google-fonts/fira-sans';
 import { color, space } from './src/theme';
 import { useApp } from './src/store';
-import { hasToken, loadToken, refreshMe } from './src/api';
+import * as Linking from 'expo-linking';
+import { handleAuthUrl, hasSession, initSession, refreshMe } from './src/api';
 import { startSync } from './src/sync';
 import { IconButton } from './src/components/ui';
 import { Processing } from './src/components/Processing';
 import { MenuDrawer } from './src/components/MenuDrawer';
-import { AuthScreen } from './src/screens/AuthScreen';
+import { AuthScreen, NewPasswordScreen } from './src/screens/AuthScreen';
 import { Record } from './src/screens/Record';
 import { Ideas } from './src/screens/Ideas';
 import { Result } from './src/screens/Result';
@@ -18,19 +19,27 @@ import { Settings } from './src/screens/Settings';
 
 export default function App() {
   const [fontsLoaded] = useFonts({ FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic });
-  const { user, route, setMenu, processing } = useApp();
+  const { user, route, setMenu, processing, recovery } = useApp();
   const hydrated = useApp.persist.hasHydrated();
   const [tokenLoaded, setTokenLoaded] = useState(false);
   const signedIn = !!user;
 
-  // Load the Keychain session once; a saved profile without a session means the person must sign in again.
+  // Read the Keychain session once; a saved profile without a session means the person must sign in again.
   useEffect(() => {
     if (!hydrated) return;
-    loadToken().then(() => {
-      if (useApp.getState().user && !hasToken()) useApp.getState().signedOut();
+    initSession().then(() => {
+      if (useApp.getState().user && !hasSession()) useApp.getState().signedOut();
       setTokenLoaded(true);
     });
   }, [hydrated]);
+
+  // Links from confirmation and password-reset emails open the app (idealizator:// scheme).
+  useEffect(() => {
+    if (!tokenLoaded) return;
+    Linking.getInitialURL().then((u) => { if (u) handleAuthUrl(u).catch(() => {}); });
+    const sub = Linking.addEventListener('url', ({ url }) => { handleAuthUrl(url).catch(() => {}); });
+    return () => sub.remove();
+  }, [tokenLoaded]);
 
   useEffect(() => {
     if (!signedIn || !tokenLoaded) return;
@@ -41,6 +50,7 @@ export default function App() {
   if (!fontsLoaded || !hydrated || !tokenLoaded) {
     return <View style={{ flex: 1, backgroundColor: color.violet, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={color.paper} /></View>;
   }
+  if (recovery) return <SafeAreaProvider><StatusBar style="dark" /><NewPasswordScreen /></SafeAreaProvider>;
   if (!user) return <SafeAreaProvider><StatusBar style="dark" /><AuthScreen /></SafeAreaProvider>;
 
   const onViolet = route === 'record';

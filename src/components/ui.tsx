@@ -157,23 +157,26 @@ export function Checkbox({ checked, onChange, children, error }: { checked: bool
   );
 }
 
-/** Bottom-anchored, high contrast: solid violet-deep for news, white with a red ring for warnings. */
+/** Bottom-anchored, high contrast: solid violet-deep for news, white with a red ring for warnings. 16 px from the left, right and bottom edges. */
 export function Toast({ text, warn, onDismiss }: { text: string; warn: boolean; onDismiss: () => void }) {
   const insets = useSafeAreaInsets();
   const [a] = useState(() => new Animated.Value(0));
   useEffect(() => { Animated.timing(a, { toValue: 1, duration: 320, useNativeDriver: true }).start(); }, [a, text]);
   return (
-    <Animated.View accessibilityRole={warn ? 'alert' : undefined} accessibilityLiveRegion="polite"
-      style={[{ position: 'absolute', zIndex: 12, left: space[4], right: space[4], bottom: space[4] + insets.bottom, maxWidth: 480, alignSelf: 'center', width: '100%', flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: 10, paddingLeft: 12, paddingRight: 8, borderRadius: radius.lg, borderWidth: warn ? 2 : 1,
-        borderColor: warn ? color.danger : color.violetDeep, backgroundColor: warn ? color.paper : color.violetDeep, opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] },
-        web({ boxShadow: '0 12px 32px rgba(37, 37, 37, 0.35), 0 2px 8px rgba(37, 37, 37, 0.2)' })]}>
-      <View style={{ width: 24, height: 24, borderRadius: radius.full, backgroundColor: warn ? color.danger : color.paper, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={warn ? 'alert' : 'check'} size={16} color={warn ? color.paper : color.violetDeep} />
+    // The outer layer spans the screen and carries the 16 px margins; the toast fills it (up to 480 px wide, centred).
+    <Animated.View pointerEvents="box-none" style={{ position: 'absolute', zIndex: 12, left: 0, right: 0, bottom: space[4] + insets.bottom, paddingHorizontal: space[4], alignItems: 'center', opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
+      <View accessibilityRole={warn ? 'alert' : undefined} accessibilityLiveRegion="polite"
+        style={[{ width: '100%', maxWidth: 480, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: 10, paddingLeft: 12, paddingRight: 8, borderRadius: radius.lg, borderWidth: warn ? 2 : 1,
+          borderColor: warn ? color.danger : color.violetDeep, backgroundColor: warn ? color.paper : color.violetDeep },
+          web({ boxShadow: '0 12px 32px rgba(37, 37, 37, 0.35), 0 2px 8px rgba(37, 37, 37, 0.2)' })]}>
+        <View style={{ width: 24, height: 24, borderRadius: radius.full, backgroundColor: warn ? color.danger : color.paper, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={warn ? 'alert' : 'check'} size={16} color={warn ? color.paper : color.violetDeep} />
+        </View>
+        <Text style={[typo.body15m, { lineHeight: 21, flex: 1, color: warn ? color.ink : color.paper }]}>{text}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" onPress={onDismiss} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="x" size={16} color={warn ? color.ink : color.paper} />
+        </Pressable>
       </View>
-      <Text style={[typo.body15m, { lineHeight: 21, flex: 1, color: warn ? color.ink : color.paper }]}>{text}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" onPress={onDismiss} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name="x" size={16} color={warn ? color.ink : color.paper} />
-      </Pressable>
     </Animated.View>
   );
 }

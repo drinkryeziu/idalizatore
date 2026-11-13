@@ -6,6 +6,8 @@ import { color, space, type } from '../theme';
 import { StorageChoice } from '../store';
 import { forgotPassword, login, register, resetPassword } from '../api';
 import { StorageOptions } from './Settings';
+import { Legal } from './Legal';
+import { LegalDoc, PRIVACY, TERMS } from '../legal';
 
 type Mode = 'welcome' | 'create' | 'signin' | 'storage' | 'forgot' | 'reset';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,6 +26,8 @@ export function AuthScreen() {
   const [err, setErr] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [legal, setLegal] = useState<LegalDoc | null>(null);
+  const [agree, setAgree] = useState(false);
 
   const go = (m: Mode) => { setErr({}); setMsg(''); setMode(m); };
   async function run(fn: () => Promise<void>) {
@@ -37,6 +41,7 @@ export function AuthScreen() {
     if (!EMAIL.test(email.trim())) e.email = 'Enter a valid email address.';
     if (mode === 'create' || mode === 'reset') { const p = pwProblem(pw); if (p) e.pw = p; else if (pw !== pw2) e.pw2 = 'Passwords do not match.'; }
     if (mode === 'signin' && !pw) e.pw = 'Enter your password.';
+    if (mode === 'create' && !agree) e.agree = 'Please agree to the Terms of Use and Privacy Policy to continue.';
     if (mode === 'reset' && !code.trim()) e.code = 'Enter the code from the email.';
     setErr(e);
     return !Object.keys(e).length;
@@ -49,6 +54,8 @@ export function AuthScreen() {
     if (mode === 'forgot') return void run(async () => { await forgotPassword(email.trim()); setMsg('If that email has an account, we sent a code. It works for 30 minutes.'); setMode('reset'); });
     if (mode === 'reset') return void run(async () => { await resetPassword(email.trim(), code.trim(), pw); setPw(''); setPw2(''); setCode(''); setMsg('Password changed. Sign in with your new password.'); setMode('signin'); });
   }
+
+  if (legal) return <Legal doc={legal} onBack={() => setLegal(null)} />;
 
   if (mode === 'welcome') {
     return (
@@ -64,6 +71,10 @@ export function AuthScreen() {
         <View style={{ gap: space[3] }}>
           <Button label="Create account" tone="light" onPress={() => go('create')} />
           <Button label="Sign in" tone="ghost" onPress={() => go('signin')} />
+          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+            <Pressable accessibilityRole="link" onPress={() => setLegal(TERMS)} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: space[3] }}><Text style={[type.meta, { color: color.paper, textDecorationLine: 'underline' }]}>Terms of Use</Text></Pressable>
+            <Pressable accessibilityRole="link" onPress={() => setLegal(PRIVACY)} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: space[3] }}><Text style={[type.meta, { color: color.paper, textDecorationLine: 'underline' }]}>Privacy Policy</Text></Pressable>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -95,6 +106,19 @@ export function AuthScreen() {
                   hint={mode !== 'signin' ? ['Use 8+ characters with a number', 'Weak', 'Fair', 'Good', 'Strong'][pwStrength(pw)] : undefined} />
               )}
               {(mode === 'create' || mode === 'reset') && <Field label="Verify password" value={pw2} onChangeText={setPw2} error={err.pw2} secureTextEntry />}
+              {mode === 'create' && (
+                <View>
+                  <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: agree }} onPress={() => setAgree(!agree)} style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start', minHeight: 44 }}>
+                    <View style={{ width: 24, height: 24, marginTop: 2, borderRadius: 6, borderWidth: 2, borderColor: err.agree ? color.danger : color.violet, backgroundColor: agree ? color.violet : color.paper, alignItems: 'center', justifyContent: 'center' }}>
+                      {agree ? <Text style={{ color: color.paper, fontSize: 16, lineHeight: 18 }}>✓</Text> : null}
+                    </View>
+                    <Text style={[type.body, { flex: 1, fontSize: 15 }]}>
+                      I agree to the <Text style={{ color: color.violetDeep, textDecorationLine: 'underline' }} onPress={() => setLegal(TERMS)}>Terms of Use</Text> and the <Text style={{ color: color.violetDeep, textDecorationLine: 'underline' }} onPress={() => setLegal(PRIVACY)}>Privacy Policy</Text>.
+                    </Text>
+                  </Pressable>
+                  {err.agree ? <Text accessibilityRole="alert" style={[type.meta, { color: color.danger }]}>{err.agree}</Text> : null}
+                </View>
+              )}
               {busy ? <ActivityIndicator color={color.violet} /> : (
                 <Button label={{ create: 'Continue', signin: 'Sign in', forgot: 'Send reset code', reset: 'Change password' }[mode as 'create']} onPress={submit} />
               )}

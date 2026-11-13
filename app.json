@@ -33,6 +33,13 @@
         {
           "microphonePermission": "Idealizator records your voice so you can speak your ideas."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Idealizator lets you attach photos to your ideas.",
+          "cameraPermission": "Idealizator lets you take a photo to attach to your idea."
+        }
       ]
     ]
   }

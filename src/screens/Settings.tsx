@@ -4,6 +4,8 @@ import { Icon, IconName } from '../components/Icon';
 import { Button, Field, PageTitle } from '../components/ui';
 import { color, radius, space, type } from '../theme';
 import { StorageChoice, useApp } from '../store';
+import { Legal } from './Legal';
+import { LegalDoc, PRIVACY, TERMS } from '../legal';
 import { changePassword, deleteAccount, logout, refreshMe, resendVerification, saveStorageChoice } from '../api';
 
 const OPTS: { id: StorageChoice; icon: IconName; title: string; text: string; tag?: string }[] = [
@@ -40,8 +42,10 @@ export function Settings() {
   const user = useApp((s) => s.user);
   const [cur, setCur] = useState(''), [next, setNext] = useState(''), [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [mailMsg, setMailMsg] = useState('');
+  const [legal, setLegal] = useState<LegalDoc | null>(null);
   const [delPw, setDelPw] = useState(''), [delOpen, setDelOpen] = useState(false), [delErr, setDelErr] = useState('');
   if (!user) return null;
+  if (legal) return <Legal inline doc={legal} onBack={() => setLegal(null)} />;
 
   async function change() {
     try { await changePassword(cur, next); setCur(''); setNext(''); setPwMsg({ ok: true, text: 'Password changed. Other devices were signed out.' }); }
@@ -85,6 +89,10 @@ export function Settings() {
       <Button label="Change password" tone="ghost" disabled={!cur || !next} onPress={change} />
 
       <Button label="Sign out" tone="ghost" onPress={confirmSignOut} />
+
+      <H>Legal</H>
+      <Button label="Terms of Use" tone="ghost" onPress={() => setLegal(TERMS)} />
+      <Button label="Privacy Policy" tone="ghost" onPress={() => setLegal(PRIVACY)} />
 
       <H>Delete account</H>
       <Text style={[type.meta, { color: color.inkSoft }]}>Removes your account and all your ideas from our server and from this iPhone. This cannot be undone.</Text>

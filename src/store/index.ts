@@ -36,6 +36,8 @@ type State = {
   appendToIdea: (id: string, text: string) => void;
   updateTranscript: (id: string, text: string) => void;
   removeIdea: (id: string) => void;
+  addImages: (id: string, images: Idea['images']) => void;
+  removeImage: (id: string, imageId: string) => void;
   applySync: (p: { ideas: Idea[]; deleted: string[]; serverTime: string; pushedIds: string[]; startedAt: string }) => void;
 };
 
@@ -66,6 +68,9 @@ export const useApp = create<State>()(
       appendToIdea: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: (i.transcript + '\n\n' + text).trim(), updatedAt: stamp() } : i) })),
       updateTranscript: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: text, updatedAt: stamp() } : i) })),
       removeIdea: (id) => set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id), tombstones: s.tombstones.includes(id) ? s.tombstones : [...s.tombstones, id] })),
+      // Images count as a change to the idea: the report becomes stale (imagesChanged) until it is analyzed again.
+      addImages: (id, images) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, images: [...i.images, ...images], imagesChanged: true, updatedAt: stamp() } : i) })),
+      removeImage: (id, imageId) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, images: i.images.filter((m) => m.id !== imageId), imagesChanged: true, updatedAt: stamp() } : i) })),
       // Merge the server's answer: last write wins per idea (by updatedAt); local images are kept because they are not synced yet.
       applySync: ({ ideas: remote, deleted, serverTime, pushedIds, startedAt }) => set((s) => {
         let list = s.ideas.filter((i) => !deleted.includes(i.id));

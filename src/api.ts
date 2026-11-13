@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import type { Filed, Idea, Report } from './ai/types';
 import { StorageChoice, User, useApp } from './store';
+import { deleteAllImageFiles, imagePayloads } from './images';
 
 // Set EXPO_PUBLIC_API_URL to the backend (on a real phone use your computer's LAN address, not localhost).
 const BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787';
@@ -46,6 +47,7 @@ export async function login(email: string, password: string) {
 export async function logout() {
   try { await request('POST', '/auth/logout', {}); } catch {}
   await saveToken(null); useApp.getState().signedOut();
+  if (!useApp.getState().ideas.length) await deleteAllImageFiles(); // synced ideas were cleared from the phone, so their images go too
 }
 export const forgotPassword = (email: string) => request('POST', '/auth/forgot', { email }, false);
 export const resetPassword = (email: string, code: string, password: string) => request('POST', '/auth/reset', { email, code, password }, false);
@@ -53,7 +55,7 @@ export const changePassword = (currentPassword: string, newPassword: string) => 
 export const resendVerification = () => post('/auth/resend', {});
 export async function deleteAccount(password: string) {
   await post('/auth/delete', { password });
-  await saveToken(null); useApp.getState().wipeAll();
+  await saveToken(null); useApp.getState().wipeAll(); await deleteAllImageFiles();
 }
 export async function refreshMe() {
   const r = await request<{ user: User }>('GET', '/me');
@@ -67,7 +69,7 @@ export async function saveStorageChoice(storage: StorageChoice) {
 // ---- AI ----
 export const fileRecording = (transcript: string, ideas: Idea[], targetId?: string) =>
   post<Filed>('/file', { transcript, targetId, ideas: ideas.map((i) => ({ id: i.id, title: i.title, summary: i.transcript.replace(/\s+/g, ' ').slice(0, 320) })) });
-export const analyzeIdea = (idea: Idea) => post<Report>('/analyze', { text: idea.transcript });
+export const analyzeIdea = async (idea: Idea) => post<Report>('/analyze', { text: idea.transcript, images: await imagePayloads(idea.images) });
 export const transcribeAudio = (audioBase64: string, mimeType: string) => post<{ text: string }>('/transcribe', { audio: audioBase64, mimeType });
 
 // ---- sync ----

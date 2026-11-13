@@ -25,3 +25,8 @@ Real accounts: email and password (scrypt hashes), session token in the iOS Keyc
 change password, delete account. Without `RESEND_API_KEY` the server prints emails in its log; with `REQUIRE_VERIFIED=0` you can skip confirmation while developing.
 Sync (`POST /sync`) is last-write-wins per idea and runs when Settings storage is "On our server" or "Both". Images are not synced yet.
 Server tests: `cd server && npm test`.
+
+## Images, legal, first run
+Up to 4 images per idea (shrunk to 1600 px JPEG, kept on the iPhone, sent to the AI on Analyze, not synced yet).
+Terms of Use and Privacy Policy screens are in Settings and on sign-up (`src/legal.ts`; sample text, needs lawyer review).
+First run on a real iPhone: see [docs/FIRST-RUN.md](docs/FIRST-RUN.md) and `./scripts/dev.sh`.

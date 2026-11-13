@@ -4,14 +4,21 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Idea, Report } from '../ai/types';
 
 export type StorageChoice = 'device' | 'server' | 'both';
-export type User = { id: string; name: string; email: string; storage: StorageChoice };
+export type User = { id: string; name: string; email: string; storage: StorageChoice; verified: boolean };
 export type Route = 'record' | 'ideas' | 'analyzed' | 'settings' | 'result';
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const stamp = () => new Date().toISOString();
 
 type State = {
   user: User | null;
   ideas: Idea[];
+  /** Account the ideas on this phone belong to; a different account signing in starts clean. */
+  ideasOwner: string | null;
+  /** Ideas deleted here that the server has not heard about yet. */
+  tombstones: string[];
+  syncCursor: string;
+  lastPushAt: string;
   route: Route;
   menuOpen: boolean;
   resultId: string | null;
@@ -19,39 +26,64 @@ type State = {
   setProcessing: (label: string | null) => void;
   openResult: (id: string) => void;
   setReport: (id: string, report: Report) => void;
-  signIn: (name: string, email: string, storage: StorageChoice) => void;
-  signOut: () => void;
-  setStorage: (s: StorageChoice) => void;
+  setSession: (user: User) => void;
+  patchUser: (patch: Partial<User>) => void;
+  signedOut: () => void;
+  wipeAll: () => void;
   go: (r: Route) => void;
   setMenu: (open: boolean) => void;
   addIdea: (title: string, transcript: string) => string;
   appendToIdea: (id: string, text: string) => void;
   updateTranscript: (id: string, text: string) => void;
   removeIdea: (id: string) => void;
+  applySync: (p: { ideas: Idea[]; deleted: string[]; serverTime: string; pushedIds: string[]; startedAt: string }) => void;
 };
 
 export const useApp = create<State>()(
   persist(
     (set) => ({
-      user: null, ideas: [], route: 'record', menuOpen: false, resultId: null, processing: null,
+      user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '',
+      route: 'record', menuOpen: false, resultId: null, processing: null,
       setProcessing: (processing) => set({ processing }),
       openResult: (id) => set({ resultId: id, route: 'result', menuOpen: false }),
-      setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false } : i) })),
-      // TODO(backend): replace with real auth (handoff section 8). This only keeps a local profile.
-      signIn: (name, email, storage) => set({ user: { id: uid(), name, email, storage }, route: 'record' }),
-      signOut: () => set({ user: null, menuOpen: false, route: 'record' }),
-      setStorage: (storage) => set((s) => (s.user ? { user: { ...s.user, storage } } : s)),
+      setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false, updatedAt: stamp() } : i) })),
+      setSession: (user) => set((s) => {
+        const sameOwner = !s.ideasOwner || s.ideasOwner === user.id;
+        return { user, route: 'record', ideasOwner: user.id, ideas: sameOwner ? s.ideas : [], tombstones: sameOwner ? s.tombstones : [], syncCursor: sameOwner ? s.syncCursor : '', lastPushAt: sameOwner ? s.lastPushAt : '' };
+      }),
+      patchUser: (patch) => set((s) => (s.user ? { user: { ...s.user, ...patch } } : s)),
+      // Ideas kept only on the phone stay for the same account; synced ideas are cleared so they are not left on a shared phone.
+      signedOut: () => set((s) => ({ user: null, menuOpen: false, route: 'record', processing: null,
+        ...(s.user?.storage === 'device' ? {} : { ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '' }) })),
+      wipeAll: () => set({ user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '', menuOpen: false, route: 'record', processing: null }),
       go: (route) => set({ route, menuOpen: false }),
       setMenu: (menuOpen) => set({ menuOpen }),
       addIdea: (title, transcript) => {
-        const now = new Date().toISOString(), id = uid();
+        const now = stamp(), id = uid();
         set((s) => ({ ideas: [{ id, createdAt: now, updatedAt: now, title, transcript, images: [], report: null, reportFor: '', imagesChanged: false }, ...s.ideas] }));
         return id;
       },
-      appendToIdea: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: (i.transcript + '\n\n' + text).trim(), updatedAt: new Date().toISOString() } : i) })),
-      updateTranscript: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: text, updatedAt: new Date().toISOString() } : i) })),
-      removeIdea: (id) => set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id) })),
+      appendToIdea: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: (i.transcript + '\n\n' + text).trim(), updatedAt: stamp() } : i) })),
+      updateTranscript: (id, text) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, transcript: text, updatedAt: stamp() } : i) })),
+      removeIdea: (id) => set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id), tombstones: s.tombstones.includes(id) ? s.tombstones : [...s.tombstones, id] })),
+      // Merge the server's answer: last write wins per idea (by updatedAt); local images are kept because they are not synced yet.
+      applySync: ({ ideas: remote, deleted, serverTime, pushedIds, startedAt }) => set((s) => {
+        let list = s.ideas.filter((i) => !deleted.includes(i.id));
+        let changed = list.length !== s.ideas.length;
+        for (const r of remote) {
+          const k = list.findIndex((i) => i.id === r.id);
+          if (k < 0) { if (!s.tombstones.includes(r.id)) { list = [...list, { ...r, images: [] }]; changed = true; } }
+          else if (r.updatedAt > list[k].updatedAt) { list[k] = { ...r, images: list[k].images }; changed = true; }
+        }
+        const tombstones = s.tombstones.filter((t) => !pushedIds.includes(t));
+        // Keep the same array when nothing changed, so the sync listener does not fire again and loop.
+        if (changed) list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        return { ideas: changed ? list : s.ideas, tombstones: tombstones.length === s.tombstones.length ? s.tombstones : tombstones, syncCursor: serverTime, lastPushAt: startedAt };
+      }),
     }),
-    { name: 'idealizator-v1', storage: createJSONStorage(() => AsyncStorage), partialize: (s) => ({ user: s.user, ideas: s.ideas }) },
+    {
+      name: 'idealizator-v1', storage: createJSONStorage(() => AsyncStorage),
+      partialize: (s) => ({ user: s.user, ideas: s.ideas, ideasOwner: s.ideasOwner, tombstones: s.tombstones, syncCursor: s.syncCursor, lastPushAt: s.lastPushAt }),
+    },
   ),
 );

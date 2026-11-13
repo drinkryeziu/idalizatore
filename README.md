@@ -19,3 +19,9 @@ audio recording and transcription, Result screen, Email/Print, sync, plans and p
 Typed ideas are filed by the AI (new / existing / "Where should this go?" sheet); Analyze Idea opens the Result screen.
 
 Voice needs `OPENAI_API_KEY` in `server/.env` (model via `TRANSCRIBE_MODEL`; whisper-1 is deprecated). The microphone works in Expo Go on a real iPhone, not the web preview.
+
+## Accounts and sync
+Real accounts: email and password (scrypt hashes), session token in the iOS Keychain, email confirmation link, reset code by email,
+change password, delete account. Without `RESEND_API_KEY` the server prints emails in its log; with `REQUIRE_VERIFIED=0` you can skip confirmation while developing.
+Sync (`POST /sync`) is last-write-wins per idea and runs when Settings storage is "On our server" or "Both". Images are not synced yet.
+Server tests: `cd server && npm test`.

@@ -4,12 +4,20 @@ import { Icon } from '../components/Icon';
 import { Button, PageTitle, ScoreChip } from '../components/ui';
 import { color, radius, space, type } from '../theme';
 import { useApp } from '../store';
+import { analyzeIdea } from '../api';
 import { isStale } from '../ai/types';
 
 const when = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
 export function Ideas({ analyzedOnly = false }: { analyzedOnly?: boolean }) {
-  const { ideas, updateTranscript, removeIdea } = useApp();
+  const { ideas, updateTranscript, removeIdea, setReport, openResult } = useApp();
+  const [busyId, setBusyId] = useState<string | null>(null), [err, setErr] = useState('');
+  async function analyze(id: string) {
+    const idea = useApp.getState().ideas.find((x) => x.id === id);
+    if (!idea || busyId) return;
+    setBusyId(id); setErr('');
+    try { setReport(id, await analyzeIdea(idea)); openResult(id); } catch (e: any) { setErr(e.message); } finally { setBusyId(null); }
+  }
   const [q, setQ] = useState(''), [open, setOpen] = useState<string | null>(null), [edit, setEdit] = useState<string | null>(null), [draft, setDraft] = useState('');
   const list = ideas.filter((i) => (!analyzedOnly || i.report) && (i.title + i.transcript).toLowerCase().includes(q.toLowerCase()));
 
@@ -18,6 +26,7 @@ export function Ideas({ analyzedOnly = false }: { analyzedOnly?: boolean }) {
       <PageTitle>{analyzedOnly ? 'Analyzed Ideas' : 'Recorded Ideas'}</PageTitle>
       <TextInput accessibilityLabel="Search ideas" placeholder="Search" placeholderTextColor={color.inkSoft} value={q} onChangeText={setQ}
         style={{ height: 44, marginVertical: space[3], borderRadius: radius.full, backgroundColor: color.field, textAlign: 'center', fontFamily: 'FiraSans_400Regular', fontSize: 17, color: color.ink }} />
+      {err ? <Text accessibilityRole="alert" style={[type.meta, { color: color.danger, marginBottom: space[2] }]}>{err}</Text> : null}
       <FlatList data={list} keyExtractor={(i) => i.id} ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
         ListEmptyComponent={<Text style={[type.body, { color: color.inkSoft, textAlign: 'center', marginTop: space[6] }]}>{analyzedOnly ? 'No analyzed ideas yet.' : 'No ideas yet. Record or type one.'}</Text>}
         renderItem={({ item: i }) => {
@@ -43,8 +52,8 @@ export function Ideas({ analyzedOnly = false }: { analyzedOnly?: boolean }) {
                     {edit === i.id
                       ? <Button label="Done" tone="ghost" onPress={() => { updateTranscript(i.id, draft.trim() || i.transcript); setEdit(null); }} />
                       : <Button label="Edit" tone="ghost" onPress={() => { setDraft(i.transcript); setEdit(i.id); }} />}
-                    {/* TODO(backend): Analyze Idea calls POST /analyze (prompt 5.2); label becomes "Re-analyze Idea" when stale. */}
-                    <Button label={stale ? 'Re-analyze Idea' : 'Analyze Idea'} disabled onPress={() => {}} />
+                    {i.report && !stale ? <Button label="View report" tone="ghost" onPress={() => openResult(i.id)} /> : null}
+                    <Button label={busyId === i.id ? 'Analyzing…' : stale ? 'Re-analyze Idea' : 'Analyze Idea'} disabled={!!busyId} onPress={() => analyze(i.id)} />
                     <Button label="Delete" tone="ghost" onPress={() => removeIdea(i.id)} />
                   </View>
                 </View>

@@ -9,6 +9,7 @@ import { MenuDrawer } from './src/components/MenuDrawer';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { Record } from './src/screens/Record';
 import { Ideas } from './src/screens/Ideas';
+import { Result } from './src/screens/Result';
 import { Settings } from './src/screens/Settings';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
         {route === 'record' && <Record />}
         {route === 'ideas' && <Ideas />}
         {route === 'analyzed' && <Ideas analyzedOnly />}
+        {route === 'result' && <Result />}
         {route === 'settings' && <Settings />}
       </SafeAreaView>
       <MenuDrawer />

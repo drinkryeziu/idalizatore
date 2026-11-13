@@ -12,3 +12,8 @@ AI prompts and defensive JSON parsers (`src/ai`).
 
 Next (handoff build order): backend (auth, `/file` and `/analyze` using the prompts in `src/ai/prompts.ts`, API key server-side),
 audio recording and transcription, Result screen, Email/Print, sync, plans and payments, Terms/Privacy.
+
+## Run with the backend
+1. `cd server && cp .env.example .env`, add `ANTHROPIC_API_KEY`, then `npm install && npm start`.
+2. In the app folder: `EXPO_PUBLIC_API_URL=http://<your-computer-LAN-IP>:8787 npx expo start` and open in Expo Go.
+Typed ideas are filed by the AI (new / existing / "Where should this go?" sheet); Analyze Idea opens the Result screen.

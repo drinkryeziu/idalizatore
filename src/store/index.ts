@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Idea } from '../ai/types';
+import type { Idea, Report } from '../ai/types';
 
 export type StorageChoice = 'device' | 'server' | 'both';
 export type User = { id: string; name: string; email: string; storage: StorageChoice };
-export type Route = 'record' | 'ideas' | 'analyzed' | 'settings';
+export type Route = 'record' | 'ideas' | 'analyzed' | 'settings' | 'result';
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
@@ -14,6 +14,9 @@ type State = {
   ideas: Idea[];
   route: Route;
   menuOpen: boolean;
+  resultId: string | null;
+  openResult: (id: string) => void;
+  setReport: (id: string, report: Report) => void;
   signIn: (name: string, email: string, storage: StorageChoice) => void;
   signOut: () => void;
   setStorage: (s: StorageChoice) => void;
@@ -28,7 +31,9 @@ type State = {
 export const useApp = create<State>()(
   persist(
     (set) => ({
-      user: null, ideas: [], route: 'record', menuOpen: false,
+      user: null, ideas: [], route: 'record', menuOpen: false, resultId: null,
+      openResult: (id) => set({ resultId: id, route: 'result', menuOpen: false }),
+      setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false } : i) })),
       // TODO(backend): replace with real auth (handoff section 8). This only keeps a local profile.
       signIn: (name, email, storage) => set({ user: { id: uid(), name, email, storage }, route: 'record' }),
       signOut: () => set({ user: null, menuOpen: false, route: 'record' }),

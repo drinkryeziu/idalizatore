@@ -38,13 +38,13 @@ export function MenuDrawer() {
   const count = (r: Route) => (r === 'ideas' ? ideas.length : r === 'analyzed' ? ideas.filter((i) => i.report).length : null);
   return (
     <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 9, backgroundColor: color.paper, paddingHorizontal: space[4], transform: [{ translateX: x }] }]} accessibilityViewIsModal>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, paddingTop: space[4] }}>{/* same top spacing as the page headers, so the X lines up with the X on Settings */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: size.touch, paddingTop: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
             <Logo size={36} color={color.violet} />
             <Text style={[typo.titleMd, { fontSize: 20, lineHeight: 26, color: color.violetDeep }]}>Idealizator</Text>
           </View>
-          <IconBtn name="x" label="Close menu" size={26} onPress={() => setMenu(false)} />
+          <IconBtn name="x" label="Close menu" onPress={() => setMenu(false)} />
         </View>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View style={{ marginTop: space[5], gap: space[2] }}>

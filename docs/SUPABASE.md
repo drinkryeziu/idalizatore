@@ -31,3 +31,8 @@ Project `idalizatore` (root directory `server`), live at https://idalizatore.ver
 Set in Vercel: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `REQUIRE_VERIFIED=1`, `ANTHROPIC_MODEL`, `TRANSCRIBE_MODEL`.
 **You add the secrets yourself** in Vercel → Settings → Environment Variables: `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`, then redeploy.
 Vercel Authentication is off for this project so the phone can reach it; every endpoint except `/health` needs a valid Supabase sign-in.
+
+## Deployed web app (Vercel)
+Project `idealizator-web` (repo root, build `npx expo export --platform web`, output `dist`), live at https://idealizator-web.vercel.app, redeployed on every push to `main`.
+Its build uses the public values `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` (set in the project; they are baked into the site at build time).
+Add `https://idealizator-web.vercel.app/**` to the Supabase Redirect URLs so confirmation and reset links open the web app.

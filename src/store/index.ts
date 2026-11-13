@@ -1,11 +1,14 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Idea, Report } from '../ai/types';
+import { persistStorage } from '../storage';
 
 export type StorageChoice = 'device' | 'server' | 'both';
 export type User = { id: string; name: string; email: string; storage: StorageChoice; verified: boolean };
-export type Route = 'record' | 'ideas' | 'analyzed' | 'settings' | 'result';
+export type Route = 'record' | 'ideas' | 'analyzed' | 'settings';
+export const ROUTE_PATH: Record<Route, string> = { record: '/', ideas: '/ideas', analyzed: '/analyzed', settings: '/settings' };
+export const routeFromPath = (p: string): Route | null => (Object.keys(ROUTE_PATH) as Route[]).find((r) => ROUTE_PATH[r] === p) ?? null;
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const stamp = () => new Date().toISOString();
@@ -19,9 +22,7 @@ type State = {
   tombstones: string[];
   syncCursor: string;
   lastPushAt: string;
-  route: Route;
   menuOpen: boolean;
-  resultId: string | null;
   processing: string | null;
   /** True while the person has opened a password-reset link and must choose a new password. */
   recovery: boolean;
@@ -48,21 +49,21 @@ export const useApp = create<State>()(
   persist(
     (set) => ({
       user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '',
-      route: 'record', menuOpen: false, resultId: null, processing: null, recovery: false,
+      menuOpen: false, processing: null, recovery: false,
       setRecovery: (recovery) => set({ recovery }),
       setProcessing: (processing) => set({ processing }),
-      openResult: (id) => set({ resultId: id, route: 'result', menuOpen: false }),
+      openResult: (id) => { set({ menuOpen: false }); router.push(`/result/${id}` as any); },
       setReport: (id, report) => set((s) => ({ ideas: s.ideas.map((i) => i.id === id ? { ...i, report, title: report.title || i.title, reportFor: i.transcript, imagesChanged: false, updatedAt: stamp() } : i) })),
       setSession: (user) => set((s) => {
         const sameOwner = !s.ideasOwner || s.ideasOwner === user.id;
-        return { user, route: 'record', ideasOwner: user.id, ideas: sameOwner ? s.ideas : [], tombstones: sameOwner ? s.tombstones : [], syncCursor: sameOwner ? s.syncCursor : '', lastPushAt: sameOwner ? s.lastPushAt : '' };
+        return { user, ideasOwner: user.id, ideas: sameOwner ? s.ideas : [], tombstones: sameOwner ? s.tombstones : [], syncCursor: sameOwner ? s.syncCursor : '', lastPushAt: sameOwner ? s.lastPushAt : '' };
       }),
       patchUser: (patch) => set((s) => (s.user ? { user: { ...s.user, ...patch } } : s)),
       // Ideas kept only on the phone stay for the same account; synced ideas are cleared so they are not left on a shared phone.
-      signedOut: () => set((s) => ({ user: null, menuOpen: false, route: 'record', processing: null,
+      signedOut: () => set((s) => ({ user: null, menuOpen: false, processing: null,
         ...(s.user?.storage === 'device' ? {} : { ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '' }) })),
-      wipeAll: () => set({ user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '', menuOpen: false, route: 'record', processing: null }),
-      go: (route) => set({ route, menuOpen: false }),
+      wipeAll: () => set({ user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '', menuOpen: false, processing: null }),
+      go: (route) => { set({ menuOpen: false }); router.navigate(ROUTE_PATH[route] as any); },
       setMenu: (menuOpen) => set({ menuOpen }),
       addIdea: (title, transcript) => {
         const now = stamp(), id = uid();
@@ -91,7 +92,7 @@ export const useApp = create<State>()(
       }),
     }),
     {
-      name: 'idealizator-v1', storage: createJSONStorage(() => AsyncStorage),
+      name: 'idealizator-v1', storage: createJSONStorage(() => persistStorage),
       partialize: (s) => ({ user: s.user, ideas: s.ideas, ideasOwner: s.ideasOwner, tombstones: s.tombstones, syncCursor: s.syncCursor, lastPushAt: s.lastPushAt }),
     },
   ),

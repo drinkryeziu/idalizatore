@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { color, radius, size, space, type } from '../theme';
 import { Icon, IconName } from './Icon';
 import { IconButton } from './ui';
-import { Route, useApp } from '../store';
+import { usePathname } from 'expo-router';
+import { Route, routeFromPath, useApp } from '../store';
 
 const ITEMS: { route: Route; label: string; icon: IconName }[] = [
   { route: 'record', label: 'Ready to record', icon: 'mic' },
@@ -15,19 +16,23 @@ const ITEMS: { route: Route; label: string; icon: IconName }[] = [
 
 /** One white panel: slides in from the right and out with the same 360 ms ease (handoff 3.8). Respects reduced motion. */
 export function MenuDrawer() {
-  const { menuOpen, setMenu, go, route, ideas, user } = useApp();
-  const { width } = useWindowDimensions();
-  const x = useRef(new Animated.Value(width)).current;
+  const { menuOpen, setMenu, go, ideas, user } = useApp();
+  const route = routeFromPath(usePathname());
+  const width = Math.min(useWindowDimensions().width, 480); // matches the centred phone column on the web
+  const [x] = useState(() => new Animated.Value(width));
   const [mounted, setMounted] = useState(false);
   const [reduce, setReduce] = useState(false);
   useEffect(() => { AccessibilityInfo.isReduceMotionEnabled().then(setReduce); }, []);
 
+  /* The panel mounts first, then slides; it unmounts after sliding out. That is a legitimate setState inside the effect. */
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- only menuOpen should start an animation */
   useEffect(() => {
     const dur = reduce ? 0 : 360;
     const cfg = { duration: dur, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true };
     if (menuOpen) { setMounted(true); Animated.timing(x, { toValue: 0, ...cfg }).start(); }
     else if (mounted) Animated.timing(x, { toValue: width, ...cfg }).start(() => setMounted(false));
   }, [menuOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   if (!mounted) return null;
   const analyzed = ideas.filter((i) => i.report).length;

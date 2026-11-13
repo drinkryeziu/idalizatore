@@ -11,7 +11,7 @@ Idealizator uses the Supabase project **krz-db** (`ejzzeuhhkmuooswabwzm`, us-wes
 | Schema | `supabase/migrations/20261113000000_idealizator_schema.sql` (already applied to krz-db) |
 
 ## One-time dashboard steps (Authentication → URL Configuration)
-1. **Redirect URLs**: add `idealizator://**` and, for Expo Go while developing, `exp://**`. This is additive; it does not change other apps.
+1. **Redirect URLs**: add `idealizator://**`, for Expo Go while developing `exp://**`, and for the web app `http://localhost:8081/**` plus your deployed web address followed by `/**`. This is additive; it does not change other apps.
    Without it, the links in confirmation and reset emails open the project's Site URL instead of the app.
 2. Optional but recommended: **Authentication → Providers → Email → enable leaked password protection** (project-wide; benefits all apps).
 3. Emails use the project's default templates and sender, which is rate-limited and meant for testing. For launch, set up custom SMTP (project-wide).

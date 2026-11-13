@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Icon, IconName } from '../components/Icon';
 import { Button, Field, PageTitle } from '../components/ui';
 import { color, radius, space, type } from '../theme';
 import { StorageChoice, useApp } from '../store';
 import { Legal } from './Legal';
+import { confirmAsync } from '../dialog';
 import { LegalDoc, PRIVACY, TERMS } from '../legal';
 import { changePassword, deleteAccount, logout, refreshMe, resendVerification, saveStorageChoice } from '../api';
 
@@ -54,10 +55,10 @@ export function Settings() {
   async function remove() {
     try { await deleteAccount(delPw); } catch (e: any) { setDelErr(e.message); }
   }
-  function confirmSignOut() {
+  async function confirmSignOut() {
     const local = user!.storage === 'device';
-    Alert.alert('Sign out?', local ? 'Your ideas stay on this iPhone and come back when you sign in again.' : 'Your ideas are backed up to your account and come back when you sign in.',
-      [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign out', onPress: () => logout() }]);
+    const ok = await confirmAsync('Sign out?', local ? 'Your ideas stay on this iPhone and come back when you sign in again.' : 'Your ideas are backed up to your account and come back when you sign in.', 'Sign out');
+    if (ok) logout();
   }
 
   return (

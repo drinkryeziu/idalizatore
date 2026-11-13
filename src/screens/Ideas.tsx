@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { Button, PageTitle, ScoreChip } from '../components/ui';
 import { color, radius, space, type } from '../theme';
@@ -28,6 +28,7 @@ export function Ideas({ analyzedOnly = false }: { analyzedOnly?: boolean }) {
     if (r.error) setErr(r.error);
   }
   function addImageMenu(id: string) {
+    if (Platform.OS === 'web') return void attach(id, 'library'); // the file picker must open straight from the click
     Alert.alert('Add image', undefined, [
       { text: 'Choose from photos', onPress: () => attach(id, 'library') },
       { text: 'Take a photo', onPress: () => attach(id, 'camera') },

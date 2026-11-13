@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
-import { readAsStringAsync } from 'expo-file-system/legacy';
+import { readAudio } from '../audio';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/ui';
 import { color, radius, size, space, type } from '../theme';
@@ -44,13 +44,14 @@ export function Record() {
     if (!recording) return;
     setRecording(false);
     try { await recorder.stop(); await setAudioModeAsync({ allowsRecording: false }); } catch {}
+    // eslint-disable-next-line react-hooks/purity -- runs in an event handler after the recording ends, not during render
     if (Date.now() - startedAt.current < 600) { setNote('Hold a little longer while you speak.'); return; }
     const uri = recorder.uri;
     if (!uri) { setNote('Nothing was recorded.'); return; }
     setBusy(true); setNote(''); useApp.getState().setProcessing('Processing');
     try {
-      const b64 = await readAsStringAsync(uri, { encoding: 'base64' });
-      const { text } = await transcribeAudio(b64, 'audio/m4a');
+      const { base64, mimeType } = await readAudio(uri);
+      const { text } = await transcribeAudio(base64, mimeType);
       setBusy(false);
       if (!text.trim()) { useApp.getState().setProcessing(null); setNote('I did not catch that. Try again.'); return; }
       await fileText(text, true);
@@ -94,7 +95,7 @@ export function Record() {
       <View style={{ alignItems: 'center', paddingVertical: space[6], gap: space[2] }}>
         <Pressable accessibilityRole="button" accessibilityLabel={screenReader ? (recording ? 'Stop recording' : 'Start recording') : 'Hold to record'}
           onPressIn={() => { if (!screenReader) startVoice(); }} onPressOut={() => { if (!screenReader) stopVoice(); }}
-          onPress={() => { if (screenReader) (recording ? stopVoice() : startVoice()); }}
+          onPress={() => { if (!screenReader) return; if (recording) stopVoice(); else startVoice(); }}
           style={{ width: size.recordHalo, height: size.recordHalo, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: recording ? color.violetDeep : 'transparent' }}>
           <View style={{ width: recording ? 64 : size.record, height: recording ? 64 : size.record, borderRadius: 999, borderWidth: 5, borderColor: recording ? color.violet : color.paper, backgroundColor: recording ? color.violet : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="mic" size={32} color={color.paper} />

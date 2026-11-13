@@ -32,4 +32,6 @@ Terms of Use and Privacy Policy screens are in Settings and on sign-up (`src/leg
 First run on a real iPhone: see [docs/FIRST-RUN.md](docs/FIRST-RUN.md) and `./scripts/dev.sh`.
 
 ## See it on your Mac
-`npx expo start --web` opens it in the browser (typing, screens and layout work; voice, camera and Keychain need the iPhone).
+The same code runs as a web app (Expo Router, real URLs): `npm run web` for development, `npm run build:web` for the static site in `dist/`.
+On the web the session is kept in browser storage and ideas in IndexedDB; voice records WebM through the browser microphone; images are kept inline; Print opens the report in its own window.
+The web app calls the API on another origin, so the API sends CORS headers (`ALLOWED_ORIGINS` can restrict them).

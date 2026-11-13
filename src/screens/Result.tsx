@@ -1,4 +1,5 @@
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import { Button, PageTitle } from '../components/ui';
@@ -20,13 +21,26 @@ function asHtml(r: Report, title: string) {
   return `<html dir="${dir}"><body style="font-family:-apple-system,Helvetica;padding:32px;color:#252525"><h1 style="color:#7d0099">${esc(title)}</h1><h3>${r.score}% ${esc(r.verdict ?? '')}</h3><p><i>AI estimate, not a promise.</i></p>${body}</body></html>`;
 }
 
+/** expo-print ignores its html argument on the web (it prints the page), so the web opens the report in its own window. */
+function printHtml(html: string) {
+  if (Platform.OS === 'web') {
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html); w.document.close(); w.focus(); w.print();
+    return;
+  }
+  Print.printAsync({ html });
+}
+
+const H = ({ children }: { children: string }) => <Text style={[type.bodyStrong, { color: color.violetDeep, marginBottom: space[2] }]}>{children}</Text>;
+
 export function Result() {
-  const { ideas, resultId, go } = useApp();
-  const idea = ideas.find((i) => i.id === resultId);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { ideas, go } = useApp();
+  const idea = ideas.find((i) => i.id === id);
   const r = idea?.report;
   if (!idea || !r) return <View style={{ padding: space[4] }}><Text style={type.body}>No report.</Text><Button label="Back" onPress={() => go('ideas')} /></View>;
   const band = scoreBand(r.score), rtl = ['ar', 'he', 'fa', 'ur'].includes((r.lang || '').slice(0, 2));
-  const H = ({ children }: { children: string }) => <Text style={[type.bodyStrong, { color: color.violetDeep, marginBottom: space[2] }]}>{children}</Text>;
 
   return (
     <View style={{ flex: 1 }}>
@@ -111,7 +125,7 @@ export function Result() {
           await Clipboard.setStringAsync(text); // mailto bodies are length-limited, so the full text is also copied
           Linking.openURL(`mailto:?subject=${encodeURIComponent(r.title || idea.title)}&body=${encodeURIComponent(text.slice(0, 1500))}`);
         }} />
-        <Button style={{ flex: 1 }} label="Print" onPress={() => Print.printAsync({ html: asHtml(r, r.title || idea.title) })} />
+        <Button style={{ flex: 1 }} label="Print" onPress={() => printHtml(asHtml(r, r.title || idea.title))} />
       </View>
     </View>
   );

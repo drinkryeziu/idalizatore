@@ -54,6 +54,17 @@ test('health needs no sign-in; unknown routes are 404', async () => {
   assert.equal((await call('POST', '/nope', {}, 'ok-1')).status, 404);
 });
 
+test('CORS preflight is answered, and responses carry the CORS header', async () => {
+  if (!server.listening) await new Promise<void>((r) => server.listen(0, r));
+  const port = (server.address() as AddressInfo).port;
+  const pre = await fetch(`http://127.0.0.1:${port}/analyze`, { method: 'OPTIONS', headers: { origin: 'https://app.example.com', 'access-control-request-method': 'POST' } });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get('access-control-allow-origin'), '*');
+  assert.match(pre.headers.get('access-control-allow-headers') || '', /authorization/);
+  const res = await fetch(`http://127.0.0.1:${port}/health`);
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+});
+
 test('rejects missing or invalid Supabase token', async () => {
   assert.equal((await call('POST', '/analyze', { text: 'x' })).status, 401);
   assert.equal((await call('POST', '/analyze', { text: 'x' }, 'garbage')).status, 401);

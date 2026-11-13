@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // The session (access + refresh token) lives in the iOS Keychain. SecureStore values are limited to about 2 KB,
@@ -35,5 +36,5 @@ const secure = {
 export const supabase = createClient(
   process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://ejzzeuhhkmuooswabwzm.supabase.co',
   process.env.EXPO_PUBLIC_SUPABASE_KEY || 'sb_publishable_B3xhqWT7WC8kqbupjML_cw_rSfE0sjN',
-  { auth: { storage: secure, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } },
+  { auth: { ...(Platform.OS === 'web' ? {} : { storage: secure }), autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } },
 );

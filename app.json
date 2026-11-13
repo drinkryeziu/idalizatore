@@ -23,6 +23,8 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "bundler": "metro",
+      "output": "single",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
@@ -40,7 +42,9 @@
           "photosPermission": "Idealizator lets you attach photos to your ideas.",
           "cameraPermission": "Idealizator lets you take a photo to attach to your idea."
         }
-      ]
+      ],
+      "expo-router",
+      "expo-status-bar"
     ],
     "scheme": "idealizator"
   }

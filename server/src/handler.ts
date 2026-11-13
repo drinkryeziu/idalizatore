@@ -16,11 +16,23 @@ async function readJson(req: IncomingMessage, maxBytes = 4_000_000): Promise<any
   for await (const c of req) { n += c.length; if (n > maxBytes) throw fail(413, 'Request too large'); chunks.push(c as Buffer); }
   try { return JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch { throw fail(400, 'Invalid JSON'); }
 }
+/** Browsers on another origin (the web app) need CORS. Auth is a bearer token, not cookies, so "*" is safe; set ALLOWED_ORIGINS to tighten it. */
+function cors(req: IncomingMessage, res: ServerResponse) {
+  const allowed = (process.env.ALLOWED_ORIGINS || '*').split(',').map((o) => o.trim());
+  const origin = String(req.headers.origin || '');
+  if (allowed.includes('*')) res.setHeader('access-control-allow-origin', '*');
+  else if (origin && allowed.includes(origin)) { res.setHeader('access-control-allow-origin', origin); res.setHeader('vary', 'origin'); }
+  res.setHeader('access-control-allow-headers', 'authorization, content-type');
+  res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+  res.setHeader('access-control-max-age', '600');
+}
 const requireVerified = () => process.env.REQUIRE_VERIFIED !== '0';
 
 /** One handler for local dev (index.ts) and for Vercel (api/index.ts). Accounts and sync live in Supabase, not here. */
 export async function handler(req: IncomingMessage, res: ServerResponse) {
   const t0 = Date.now();
+  cors(req, res);
+  if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   const path = new URL(req.url || '/', 'http://x').pathname.replace(/^\/api(?=\/|$)/, '') || '/';
   try {
     if (req.method === 'GET' && (path === '/health' || path === '/')) return send(res, 200, { ok: true });

@@ -25,3 +25,9 @@ Idealizator uses the Supabase project **krz-db** (`ejzzeuhhkmuooswabwzm`, us-wes
 - Row-level security on all three tables; people cannot change their own `plan`; other people's rows are invisible.
 - The live functions were tested against krz-db in a transaction that rolled back: last-write-wins, deletions that stay deleted, images stripped, the free limit of 3, and delete-my-data.
 - Security advisor: only the intended "signed-in users can call these functions" notices for the five `idealizator_*` functions (each checks `auth.uid()`).
+
+## Deployed API (Vercel)
+Project `idalizatore` (root directory `server`), live at https://idalizatore.vercel.app, redeployed on every push to `main`.
+Set in Vercel: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `REQUIRE_VERIFIED=1`, `ANTHROPIC_MODEL`, `TRANSCRIBE_MODEL`.
+**You add the secrets yourself** in Vercel → Settings → Environment Variables: `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`, then redeploy.
+Vercel Authentication is off for this project so the phone can reach it; every endpoint except `/health` needs a valid Supabase sign-in.

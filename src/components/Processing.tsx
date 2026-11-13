@@ -11,7 +11,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 
 function Item({ row, reduce }: { row: number; reduce: boolean }) {
   const { width, height } = useWindowDimensions();
-  const w = Math.min(width, 480);
+  const w = Math.min(width, 430);
   const mk = useCallback(() => {
     const code = Math.random() < 0.28;
     return { code, text: pick(code ? SNIPPETS : FORMULAS), left: (0.16 + Math.random() * 0.68) * w, top: ((ROWS[row] + Math.random() * 3 - 1.5) / 100) * height,

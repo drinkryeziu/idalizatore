@@ -16,8 +16,8 @@ export function Screen({ tone = 'paper', children, flush }: { tone?: 'violet' | 
   );
 }
 
-/** Back on the left; optional "record more" mic and the menu on the right. */
-export function TopBar({ onBack, onMic, micLabel, tone = 'paper', float }: { onBack?: () => void; onMic?: () => void; micLabel?: string; tone?: 'violet' | 'paper'; float?: boolean }) {
+/** Back on the left; on the right an optional "record more" mic, then the menu (or a close X on pages like Settings). */
+export function TopBar({ onBack, onMic, micLabel, onClose, tone = 'paper', float }: { onBack?: () => void; onMic?: () => void; micLabel?: string; onClose?: () => void; tone?: 'violet' | 'paper'; float?: boolean }) {
   const setMenu = useApp((s) => s.setMenu);
   const tint = tone === 'violet' ? color.paper : color.violet;
   return (
@@ -25,7 +25,7 @@ export function TopBar({ onBack, onMic, micLabel, tone = 'paper', float }: { onB
       {onBack ? <IconBtn name="arrow-left" label="Back" onPress={onBack} tint={tint} /> : <View style={{ width: 44, height: 44 }} />}
       <View style={{ flexDirection: 'row' }}>
         {onMic ? <IconBtn name="mic-filled" label={micLabel || 'Record'} onPress={onMic} tint={tint} /> : null}
-        <IconBtn name="menu" label="Open menu" onPress={() => setMenu(true)} tint={tint} />
+        {onClose ? <IconBtn name="x" label="Close" onPress={onClose} tint={tint} /> : <IconBtn name="menu" label="Open menu" onPress={() => setMenu(true)} tint={tint} />}
       </View>
     </View>
   );

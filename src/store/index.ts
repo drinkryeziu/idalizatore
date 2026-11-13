@@ -117,3 +117,6 @@ export const useApp = create<State>()(
     },
   ),
 );
+
+// Development only: lets screens such as the choice sheet be opened from the browser console. Not present in production builds.
+if (__DEV__ && typeof window !== 'undefined') (window as unknown as { __idz?: typeof useApp }).__idz = useApp;

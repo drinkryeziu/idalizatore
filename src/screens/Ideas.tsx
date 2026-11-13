@@ -119,14 +119,10 @@ export function Ideas() {
               onAdd={() => addImageMenu(i.id)} onEdit={() => setEditing(editing === i.id ? null : i.id)} onEndEdit={() => setEditing(null)}
               onChangeText={(t) => updateTranscript(i.id, t)} onAnalyze={() => analyze(i)} onRemoveImage={(mid) => { const m = i.images.find((x) => x.id === mid); removeImage(i.id, mid); if (m) deleteImageFiles([m]); }} />
           )} />
-        {v.recording && v.typing ? (
-          <TextInput accessibilityLabel="Your idea" multiline autoFocus value={v.typed} onChangeText={v.setTyped} placeholder="Type your idea in any language, then tap the mic to save it." placeholderTextColor={color.inkSoft}
-            style={[{ minHeight: 96, marginBottom: space[2], padding: space[3], borderWidth: 1, borderColor: color.violet, borderRadius: radius.sm, backgroundColor: color.paper, color: color.ink, fontFamily: font.regular, fontSize: 16, textAlignVertical: 'top' }, web({ outlineStyle: 'none' })]} />
-        ) : null}
         <View style={{ alignItems: 'center', marginHorizontal: -space[4], paddingTop: space[1], borderTopWidth: 1, borderTopColor: color.track }}>
           <RecordButton tone="paper" recording={v.recording} label={v.canHold ? 'Hold to record' : 'Start recording'} {...v.micProps} />
           <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.inkSoft, textAlign: 'center', minHeight: 16 }]}>
-            {v.recording ? (v.typing ? 'Tap to save' : 'Listening… release to stop')
+            {v.recording ? (v.canHold ? 'Listening… release to stop' : 'Listening… tap to stop')
               : targetIdea ? <>Hold to add to {targetIdea.title} · <Text accessibilityRole="button" onPress={() => setTarget(null)} style={{ textDecorationLine: 'underline' }}>Cancel</Text></>
               : v.hint}
           </Text>

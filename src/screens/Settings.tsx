@@ -30,6 +30,7 @@ export function Settings() {
   const [del, setDel] = useState<{ pw: string; err: string } | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { fetchPlan().then((p) => setPlan(p.plan)).catch(() => {}); }, []);
+  const previous = () => (router.canGoBack() ? router.back() : router.navigate('/'));
   if (!user) return null;
   if (legal) return <Legal doc={legal} onBack={() => setLegal(null)} />;
 
@@ -67,7 +68,7 @@ export function Settings() {
 
   return (
     <Screen tone="paper">
-      <TopBar onBack={() => router.navigate('/')} />
+      <TopBar onBack={previous} onClose={previous} />
       <ScrollView style={{ flex: 1, marginHorizontal: -space[4] }} contentContainerStyle={{ paddingHorizontal: space[4], paddingBottom: space[6] }} keyboardShouldPersistTaps="handled">
         <PageTitle>Settings</PageTitle>
 

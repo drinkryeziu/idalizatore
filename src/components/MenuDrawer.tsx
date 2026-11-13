@@ -19,7 +19,7 @@ export function MenuDrawer() {
   const { menuOpen, setMenu, go, ideas, user } = useApp();
   const path = usePathname();
   const route = routeFromPath(path) ?? (path.startsWith('/result') ? 'analyzed' : path.startsWith('/billing') ? 'settings' : null);
-  const width = Math.min(useWindowDimensions().width, 480); // matches the centred phone column on the web
+  const width = Math.min(useWindowDimensions().width, 430); // matches the phone frame on the web
   const [x] = useState(() => new Animated.Value(width));
   const [mounted, setMounted] = useState(false);
   const [reduce, setReduce] = useState(false);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { ActivityIndicator, Platform, View, useWindowDimensions } from 'react-native';
 import { Slot, router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
@@ -17,12 +17,16 @@ import { ChoiceSheet } from '../components/ChoiceSheet';
 import { Toast } from '../components/ui';
 import { AuthScreen, NewPasswordScreen } from '../screens/AuthScreen';
 
-/** On the web the app is a phone-width column centred on the page; on the iPhone it fills the screen. */
+/** On the web the app sits in the prototype's rounded phone frame on wide screens, and fills the window on narrow ones. */
 function Shell({ children }: { children: React.ReactNode }) {
+  const { width, height } = useWindowDimensions();
   if (Platform.OS !== 'web') return <>{children}</>;
+  const framed = width > 480;
   return (
-    <View style={{ flex: 1, alignItems: 'center', backgroundColor: '#f1ecf3' }}>
-      <View style={{ flex: 1, width: '100%', maxWidth: 480, overflow: 'hidden', backgroundColor: color.paper, boxShadow: '0 0 40px rgba(125, 0, 153, 0.18)' } as any}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: framed ? 24 : 0, backgroundColor: '#f1ecf3' }}>
+      <View style={framed
+        ? ({ width: 430, height: Math.min(932, height - 48), borderRadius: 36, overflow: 'hidden', backgroundColor: color.paper, boxShadow: '0 0 0 1px rgba(37, 37, 37, 0.08), 0 24px 64px rgba(125, 0, 153, 0.18)' } as any)
+        : { flex: 1, width: '100%', overflow: 'hidden', backgroundColor: color.paper }}>
         {children}
       </View>
     </View>

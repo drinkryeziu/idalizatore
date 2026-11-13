@@ -18,7 +18,7 @@ const Feats = ({ items }: { items: string[] }) => (
 /** Current plan and usage, and a plan chooser. Payments are not connected yet (Stripe or In-App Purchase is still to be decided). */
 export function Billing() {
   const say = useApp((s) => s.say);
-  const [cur, setCur] = useState<{ plan: PlanId; used: number; limit: number | null }>({ plan: 'free', used: 0, limit: 3 });
+  const [cur, setCur] = useState<{ plan: PlanId; used: number; limit: number | null }>({ plan: 'free', used: 0, limit: 10 });
   const [choose, setChoose] = useState<{ plan: PlanId; period: 'month' | 'year' } | null>(null);
   useEffect(() => { fetchPlan().then(setCur).catch(() => {}); }, []);
   const plan = planOf(cur.plan);

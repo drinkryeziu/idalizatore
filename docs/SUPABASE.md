@@ -23,7 +23,7 @@ Idealizator uses the Supabase project **krz-db** (`ejzzeuhhkmuooswabwzm`, us-wes
 
 ## Checks already run
 - Row-level security on all three tables; people cannot change their own `plan`; other people's rows are invisible.
-- The live functions were tested against krz-db in a transaction that rolled back: last-write-wins, deletions that stay deleted, images stripped, the free limit of 3, and delete-my-data.
+- The live functions were tested against krz-db in a transaction that rolled back: last-write-wins, deletions that stay deleted, images stripped, the free limit of 10 analyzed ideas a month, and delete-my-data.
 - Security advisor: only the intended "signed-in users can call these functions" notices for the five `idealizator_*` functions (each checks `auth.uid()`).
 
 ## Deployed API (Vercel)

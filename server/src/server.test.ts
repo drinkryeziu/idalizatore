@@ -10,6 +10,7 @@ import { AddressInfo } from 'node:net';
 import { server } from './index';
 import { rateLimit } from './limits';
 
+const FREE_LIMIT = 10; // the Free plan: 10 analyzed ideas a month (enforced in the database; mocked here)
 const REPORT = { language: 'en', languageName: 'English', caption: 'The forecasted success rate.', title: 'Roof App', score: 62, verdict: 'Promising, with risks',
   factors: [{ label: 'Demand', score: 70 }], chart: null, similar: null, equipment: null,
   sections: [{ title: 'Concept', blocks: [{ kind: 'paragraph', text: 'Hello.' }] }] };
@@ -32,7 +33,7 @@ globalThis.fetch = (async (input: any, init: any) => {
     return json({ id: `user-${m[2]}`, email: `u${m[2]}@example.com`, email_confirmed_at: m[1] === 'ok' ? '2026-01-01T00:00:00Z' : null, user_metadata: { name: 'Alex' } });
   }
   if (url.endsWith('/rpc/idealizator_analysis_status')) {
-    const id = `user-${token.split('-')[1]}`, n = used.get(id) ?? 0, lim = plan === 'pro' ? null : 3;
+    const id = `user-${token.split('-')[1]}`, n = used.get(id) ?? 0, lim = plan === 'pro' ? null : FREE_LIMIT;
     return json({ used: n, limit: lim, allowed: lim === null || n < lim });
   }
   if (url.endsWith('/rpc/idealizator_count_analysis')) { const id = `user-${token.split('-')[1]}`; used.set(id, (used.get(id) ?? 0) + 1); counted.push(id); return new Response('', { status: 204 }); }
@@ -77,13 +78,13 @@ test('unconfirmed email cannot use AI', async () => {
 test('/analyze parses fenced JSON, counts usage, and stops at the free limit', async () => {
   anthropicText = 'Here:\n```json\n' + JSON.stringify(REPORT) + '\n```';
   const statuses: number[] = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < FREE_LIMIT + 1; i++) {
     const r = await call('POST', '/analyze', { text: 'A roofing app' }, 'ok-3');
     statuses.push(r.status);
     if (i === 0) assert.equal(r.json.score, 62);
   }
-  assert.deepEqual(statuses, [200, 200, 200, 402]);
-  assert.equal(counted.filter((c) => c === 'user-3').length, 3); // the refused call is not counted
+  assert.deepEqual(statuses, [...Array(FREE_LIMIT).fill(200), 402]);
+  assert.equal(counted.filter((c) => c === 'user-3').length, FREE_LIMIT); // the refused call is not counted
 });
 
 test('pro plan has no limit', async () => {

@@ -1,28 +1,30 @@
 import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, PageTitle } from '../components/ui';
+import { Screen, TopBar } from '../components/chrome';
+import { IconBtn, PageTitle, ResAct } from '../components/ui';
 import { LEGAL_UPDATED, LegalDoc } from '../legal';
-import { color, space, type } from '../theme';
+import { color, font, space, typo } from '../theme';
 
-/** Static legal text. Used signed out (from Welcome / Create account) and signed in (from Settings). */
-export function Legal({ doc, onBack, inline = false }: { doc: LegalDoc; onBack: () => void; inline?: boolean }) {
-  const body = (
-    <>
-      <ScrollView contentContainerStyle={{ padding: space[4], gap: space[3] }}>
+/** Terms of Use / Privacy Policy. Signed out it only has Back; signed in it also has the menu. */
+export function Legal({ doc, onBack, signedOut }: { doc: LegalDoc; onBack: () => void; signedOut?: boolean }) {
+  return (
+    <Screen tone="paper">
+      {signedOut ? <View style={{ minHeight: 44, paddingTop: 4, alignItems: 'flex-start' }}><IconBtn name="arrow-left" label="Back" onPress={onBack} /></View> : <TopBar onBack={onBack} />}
+      <ScrollView style={{ flex: 1, marginHorizontal: -space[4] }} contentContainerStyle={{ paddingHorizontal: space[4], paddingBottom: space[6] }}>
         <PageTitle>{doc.title}</PageTitle>
-        <Text style={[type.meta, { color: color.inkSoft }]}>Last updated {LEGAL_UPDATED}</Text>
-        <View style={{ padding: space[3], borderRadius: 12, borderWidth: 1, borderColor: color.amber }}>
-          <Text style={type.meta}>Sample text. Have a lawyer review it before launch.</Text>
+        <Text style={[typo.body14, { color: color.inkSoft, marginTop: space[1], marginBottom: space[3] }]}>Last updated {LEGAL_UPDATED}</Text>
+        <View style={{ marginBottom: space[4], paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, backgroundColor: color.demoBg }}>
+          <Text style={[typo.label13m, { lineHeight: 20, color: color.warning }]}>Sample text. Have a lawyer review it before launch.</Text>
         </View>
-        {doc.sections.map(([h, paras], n) => (
-          <View key={h} style={{ gap: space[2], marginTop: space[3] }}>
-            <Text accessibilityRole="header" style={[type.bodyStrong, { color: color.violetDeep }]}>{n + 1}. {h}</Text>
-            {paras.map((p, k) => <Text key={k} style={[type.body, { fontSize: 16 }]}>{p}</Text>)}
-          </View>
-        ))}
+        <View style={{ gap: space[5] }}>
+          {doc.sections.map(([h, paras], n) => (
+            <View key={h}>
+              <Text accessibilityRole="header" style={{ fontFamily: font.semi, fontSize: 18, lineHeight: 24, color: color.violetDeep, marginBottom: space[2] }}>{n + 1}. {h}</Text>
+              {paras.map((p, k) => <Text key={k} style={[typo.body15, { color: color.ink, marginBottom: space[2] }]}>{p}</Text>)}
+            </View>
+          ))}
+        </View>
+        <ResAct primary label="Back" onPress={onBack} style={{ marginTop: space[6] }} />
       </ScrollView>
-      <View style={{ padding: space[4], borderTopWidth: 1, borderTopColor: color.track }}><Button label="Back" tone="ghost" onPress={onBack} /></View>
-    </>
+    </Screen>
   );
-  return inline ? <View style={{ flex: 1 }}>{body}</View> : <SafeAreaView style={{ flex: 1, backgroundColor: color.paper }}>{body}</SafeAreaView>;
 }

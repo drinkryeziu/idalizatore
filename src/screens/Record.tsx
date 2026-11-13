@@ -1,122 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
-import { readAudio } from '../audio';
-import { Icon } from '../components/Icon';
-import { Button } from '../components/ui';
-import { color, radius, size, space, type } from '../theme';
-import { useApp } from '../store';
-import { fileRecording, transcribeAudio } from '../api';
-import type { Filed } from '../ai/types';
+import { KeyboardAvoidingView, Platform, Text, TextInput, View } from 'react-native';
+import { Em, Hero, RecordButton, Screen, TopBar, Waveform } from '../components/chrome';
+import { color, font, radius, space, typo } from '../theme';
+import { useVoice } from '../voice';
 
-/** Hold to record. Voice capture + transcription need the backend endpoint (handoff section 6); until then the typing fallback goes through the same AI filing. */
+/** "Ready to record": hold the mic and speak. With no voice available, tap the mic and type instead. */
 export function Record() {
-  const { addIdea, appendToIdea, ideas, go } = useApp();
-  const [typed, setTyped] = useState('');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [ask, setAsk] = useState<{ filed: Filed } | null>(null);
-
-  const fallbackTitle = (t: string) => t.split(/\s+/).slice(0, 4).join(' ');
-
-  const save = () => fileText(typed.trim());
-
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const startedAt = useRef(0);
-  const [recording, setRecording] = useState(false);
-  const [screenReader, setScreenReader] = useState(false);
-  useEffect(() => { AccessibilityInfo.isScreenReaderEnabled().then(setScreenReader); }, []);
-
-  async function startVoice() {
-    if (busy || recording) return;
-    const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) { setNote('Microphone access is off. Turn it on in Settings, or type your idea.'); return; }
-    try {
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      await recorder.prepareToRecordAsync();
-      recorder.record(); startedAt.current = Date.now(); setRecording(true); setNote('');
-      Haptics.impactAsync();
-    } catch { setNote('Could not start recording. Type your idea instead.'); }
-  }
-
-  async function stopVoice() {
-    if (!recording) return;
-    setRecording(false);
-    try { await recorder.stop(); await setAudioModeAsync({ allowsRecording: false }); } catch {}
-    // eslint-disable-next-line react-hooks/purity -- runs in an event handler after the recording ends, not during render
-    if (Date.now() - startedAt.current < 600) { setNote('Hold a little longer while you speak.'); return; }
-    const uri = recorder.uri;
-    if (!uri) { setNote('Nothing was recorded.'); return; }
-    setBusy(true); setNote(''); useApp.getState().setProcessing('Processing');
-    try {
-      const { base64, mimeType } = await readAudio(uri);
-      const { text } = await transcribeAudio(base64, mimeType);
-      setBusy(false);
-      if (!text.trim()) { useApp.getState().setProcessing(null); setNote('I did not catch that. Try again.'); return; }
-      await fileText(text, true);
-    } catch (e: any) { setBusy(false); useApp.getState().setProcessing(null); setNote(e.message || 'Could not process the recording.'); }
-  }
-
-  /** Raw speech is never shown or saved: only the AI-polished text is kept (handoff 3.2). */
-  async function fileText(raw: string, fromVoice = false) {
-    if (!raw || busy && !fromVoice) return;
-    setBusy(true); setNote(''); useApp.getState().setProcessing('Processing');
-    try {
-      const filed = await fileRecording(raw, ideas);
-      if (!filed.text) { setNote('No idea found in that. Nothing was saved.'); setTyped(''); return; }
-      if (filed.decision === 'existing' && filed.candidates[0]) { appendToIdea(filed.candidates[0], filed.text); setNote('Added to your idea.'); setTyped(''); }
-      else if (filed.decision === 'unsure' && filed.candidates.length) setAsk({ filed });
-      else { addIdea(filed.title || fallbackTitle(filed.text), filed.text); setNote('Saved as a new idea.'); setTyped(''); }
-    } catch (e: any) {
-      if (fromVoice) { setNote(`${e.message} Your recording was not saved. Try again or type it.`); return; }
-      // Typed text: keep the person's words rather than lose them.
-      addIdea(fallbackTitle(raw), raw); setTyped(''); setNote(`${e.message} Saved as a new idea without AI cleanup.`);
-    } finally { setBusy(false); useApp.getState().setProcessing(null); }
-  }
-
-  function choose(id: string | null) {
-    if (!ask) return;
-    const { filed } = ask;
-    if (id) appendToIdea(id, filed.text); else addIdea(filed.title || fallbackTitle(filed.text), filed.text);
-    setAsk(null); setTyped(''); setNote(id ? 'Added to your idea.' : 'Saved as a new idea.');
-  }
-
+  const v = useVoice(null);
   return (
-    <KeyboardAvoidingView style={{ flex: 1, padding: space[4] }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ paddingLeft: space[10], marginTop: space[8] }}>
-        <Text style={[type.hero, { color: color.paper }]}>Speak your{'\n'}idea.</Text>
-      </View>
-      <View style={{ flex: 1 }} />
-      <TextInput accessibilityLabel="Type your idea" multiline placeholder="Or type your idea here" placeholderTextColor={color.inkSoft}
-        value={typed} onChangeText={setTyped} editable={!busy}
-        style={{ minHeight: 96, padding: space[3], borderRadius: 4, backgroundColor: color.paper, color: color.ink, fontFamily: 'FiraSans_400Regular', fontSize: 16, textAlignVertical: 'top' }} />
-      {typed.trim() ? <View style={{ marginTop: space[3] }}>{busy ? <ActivityIndicator color={color.paper} /> : <Button label="Save idea" tone="light" onPress={save} />}</View> : null}
-      <View style={{ alignItems: 'center', paddingVertical: space[6], gap: space[2] }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={screenReader ? (recording ? 'Stop recording' : 'Start recording') : 'Hold to record'}
-          onPressIn={() => { if (!screenReader) startVoice(); }} onPressOut={() => { if (!screenReader) stopVoice(); }}
-          onPress={() => { if (!screenReader) return; if (recording) stopVoice(); else startVoice(); }}
-          style={{ width: size.recordHalo, height: size.recordHalo, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: recording ? color.violetDeep : 'transparent' }}>
-          <View style={{ width: recording ? 64 : size.record, height: recording ? 64 : size.record, borderRadius: 999, borderWidth: 5, borderColor: recording ? color.violet : color.paper, backgroundColor: recording ? color.violet : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="mic" size={32} color={color.paper} />
+    <Screen tone="violet">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TopBar tone="violet" />
+        <View style={{ height: 172, flexShrink: 1 }} />
+        <Hero>Start <Em>recording</Em>{'\n'}your <Em>ideas</Em>!</Hero>
+        {v.recording ? (
+          <View style={{ marginTop: space[4], gap: space[2] }} accessibilityLiveRegion="polite">
+            {!v.typing ? (
+              <Text style={[typo.body19, { marginLeft: space[20], paddingRight: space[4], color: color.paper, opacity: 0.75, fontStyle: 'italic' }]}>
+                {v.canHold ? 'Listening… let go of the mic when you’re done.' : 'Listening… tap the mic when you’re done.'}
+              </Text>
+            ) : (
+              <TextInput accessibilityLabel="Your idea" multiline autoFocus numberOfLines={4} value={v.typed} onChangeText={v.setTyped}
+                placeholder="Type your idea in any language, then tap the mic to save it." placeholderTextColor={color.inkSoft}
+                style={[typo.body19, { minHeight: 120, padding: space[3], borderRadius: radius.sm, backgroundColor: color.paper, color: color.ink, textAlignVertical: 'top', fontFamily: font.regular }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : null]} />
+            )}
           </View>
-        </Pressable>
-        {busy && !recording ? <ActivityIndicator color={color.paper} /> : null}
-        <Text style={[type.meta, { color: color.paper, minHeight: 18, textAlign: 'center' }]}>{recording ? (screenReader ? 'Tap to stop' : 'Release to stop') : busy ? 'Working on it…' : note || (screenReader ? 'Tap to record' : 'Hold to record')}</Text>
-        {/^(Saved|Added)/.test(note) && <Button label="Open Recorded Ideas" tone="light" onPress={() => go('ideas')} />}
-      </View>
-
-      {ask && (
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: space[4], paddingBottom: space[8], backgroundColor: color.paper, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, gap: space[2] }} accessibilityViewIsModal>
-          <Text style={[type.titleMd, { color: color.violetDeep }]}>Where should this go?</Text>
-          <Text style={[type.body, { color: color.inkSoft, maxHeight: 120 }]} numberOfLines={5}>{ask.filed.text}</Text>
-          {ask.filed.candidates.map((id) => {
-            const i = ideas.find((x) => x.id === id);
-            return i ? <Button key={id} label={`Add to ${i.title}`} tone="ghost" onPress={() => choose(id)} /> : null;
-          })}
-          <Button label="Save as a new idea" onPress={() => choose(null)} />
+        ) : null}
+        <View style={{ flex: 1, minHeight: space[6], justifyContent: 'center', marginHorizontal: -space[4] }}>{v.recording && !v.typing ? <Waveform height={160} /> : null}</View>
+        <View style={{ alignItems: 'center', gap: space[1], paddingBottom: space[10] }}>
+          <RecordButton recording={v.recording} label={v.canHold ? 'Hold to record' : v.recording ? 'Stop recording' : 'Start recording'} {...v.micProps} />
+          <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.paper, textAlign: 'center', minHeight: 16 }]}>{v.hint}</Text>
         </View>
-      )}
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }

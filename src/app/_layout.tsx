@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
-import { Slot, router, usePathname } from 'expo-router';
+import { Slot, router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FiraSans_300Light_Italic, FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_700Bold_Italic, useFonts } from '@expo-google-fonts/fira-sans';
-import { color, space } from '../theme';
+import { Caveat_500Medium } from '@expo-google-fonts/caveat';
+import { FiraCode_400Regular } from '@expo-google-fonts/fira-code';
+import { color } from '../theme';
 import { useApp } from '../store';
 import { handleAuthUrl, hasSession, initSession, refreshMe } from '../api';
 import { startSync } from '../sync';
-import { IconButton } from '../components/ui';
 import { Processing } from '../components/Processing';
 import { MenuDrawer } from '../components/MenuDrawer';
+import { ChoiceSheet } from '../components/ChoiceSheet';
+import { Toast } from '../components/ui';
 import { AuthScreen, NewPasswordScreen } from '../screens/AuthScreen';
 
 /** On the web the app is a phone-width column centred on the page; on the iPhone it fills the screen. */
@@ -27,11 +30,10 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic });
-  const { user, setMenu, processing, recovery } = useApp();
+  const [fontsLoaded] = useFonts({ FiraSans_400Regular, FiraSans_500Medium, FiraSans_600SemiBold, FiraSans_300Light_Italic, FiraSans_700Bold_Italic, Caveat_500Medium, FiraCode_400Regular });
+  const { user, processing, recovery, toast, clearToast } = useApp();
   const hydrated = useApp.persist.hasHydrated();
   const [ready, setReady] = useState(false);
-  const pathname = usePathname();
   const signedIn = !!user;
 
   // Read the saved session once; a saved profile without a session means the person must sign in again.
@@ -70,25 +72,13 @@ export default function RootLayout() {
   } else if (!user) {
     body = <AuthScreen />;
   } else {
-    const onViolet = pathname === '/';
-    body = (
-      <>
-        <StatusBar style={onViolet || processing ? 'light' : 'dark'} />
-        <SafeAreaView style={{ flex: 1, backgroundColor: onViolet ? color.violet : color.paper }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: space[2] }}>
-            <IconButton name="menu" label="Open menu" tint={onViolet ? color.paper : color.violet} onPress={() => setMenu(true)} />
-          </View>
-          <Slot />
-        </SafeAreaView>
-        <MenuDrawer />
-        {processing ? <Processing label={processing} /> : null}
-      </>
-    );
+    body = <><Slot /><MenuDrawer /><ChoiceSheet />{processing ? <Processing label={processing} /> : null}</>;
   }
 
   return (
     <SafeAreaProvider>
-      <Shell>{body}</Shell>
+      <StatusBar style={!user || processing ? 'light' : 'dark'} />
+      <Shell>{body}{toast ? <Toast key={toast.text} text={toast.text} warn={toast.warn} onDismiss={clearToast} /> : null}</Shell>
     </SafeAreaProvider>
   );
 }

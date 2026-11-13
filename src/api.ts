@@ -156,3 +156,24 @@ export async function syncRequest(since: string, ideas: Idea[], deleted: string[
   if (error) throw new ApiError(error.message);
   return data as { serverTime: string; ideas: Idea[]; deleted: string[] };
 }
+
+// ---------- plan and account details ----------
+export async function fetchPlan(): Promise<{ plan: 'free' | 'plus' | 'pro'; used: number; limit: number | null }> {
+  const [prof, status] = await Promise.all([supabase.from('idealizator_profiles').select('plan').maybeSingle(), supabase.rpc('idealizator_analysis_status')]);
+  const st = (status.data ?? {}) as { used?: number; limit?: number | null };
+  return { plan: ((prof.data as { plan?: string } | null)?.plan as 'free' | 'plus' | 'pro') ?? 'free', used: st.used ?? 0, limit: st.limit ?? null };
+}
+/** Saves the name on the profile; a changed email goes through Supabase, which asks the new address to confirm. */
+export async function updateAccount(name: string, email: string): Promise<'saved' | 'confirm-email'> {
+  const u = useApp.getState().user;
+  if (!u) throw new ApiError('Sign in again.');
+  const { error } = await supabase.from('idealizator_profiles').update({ name }).eq('id', u.id);
+  if (error) throw new ApiError('Could not save your details. Try again.');
+  useApp.getState().patchUser({ name });
+  if (email.toLowerCase() !== u.email.toLowerCase()) {
+    const r = await supabase.auth.updateUser({ email }, { emailRedirectTo: redirectTo() });
+    if (r.error) throw new ApiError(friendly(r.error.message));
+    return 'confirm-email';
+  }
+  return 'saved';
+}

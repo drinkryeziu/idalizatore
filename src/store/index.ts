@@ -10,6 +10,9 @@ export type Route = 'record' | 'ideas' | 'analyzed' | 'settings';
 export const ROUTE_PATH: Record<Route, string> = { record: '/', ideas: '/ideas', analyzed: '/analyzed', settings: '/settings' };
 export const routeFromPath = (p: string): Route | null => (Object.keys(ROUTE_PATH) as Route[]).find((r) => ROUTE_PATH[r] === p) ?? null;
 
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+/** Messages that report a problem get the white-with-red-ring warning style. */
+const WARN = /(couldn.t|didn.t|isn.t|declined|too many|not connected|unavailable|not allowed|reached|can.t)/i;
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const stamp = () => new Date().toISOString();
 
@@ -26,6 +29,18 @@ type State = {
   processing: string | null;
   /** True while the person has opened a password-reset link and must choose a new password. */
   recovery: boolean;
+  /** The message at the bottom of the screen (auto-dismisses after about 4 seconds). */
+  toast: { text: string; warn: boolean } | null;
+  say: (text: string, warn?: boolean) => void;
+  clearToast: () => void;
+  /** "Where should this go?" sheet: shown when the AI is unsure which idea a recording belongs to. */
+  choice: { text: string; title: string | null; candidates: string[] } | null;
+  setChoice: (c: { text: string; title: string | null; candidates: string[] } | null) => void;
+  /** The idea card that is open on Recorded Ideas, and the idea a new recording is being added to. */
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
+  target: string | null;
+  setTarget: (id: string | null) => void;
   setRecovery: (v: boolean) => void;
   setProcessing: (label: string | null) => void;
   openResult: (id: string) => void;
@@ -49,7 +64,12 @@ export const useApp = create<State>()(
   persist(
     (set) => ({
       user: null, ideas: [], ideasOwner: null, tombstones: [], syncCursor: '', lastPushAt: '',
-      menuOpen: false, processing: null, recovery: false,
+      menuOpen: false, processing: null, recovery: false, toast: null, choice: null, openId: null, target: null,
+      say: (text, warn) => { clearTimeout(toastTimer); set({ toast: { text, warn: warn ?? WARN.test(text) } }); toastTimer = setTimeout(() => set({ toast: null }), 4200); },
+      clearToast: () => { clearTimeout(toastTimer); set({ toast: null }); },
+      setChoice: (choice) => set({ choice }),
+      setOpenId: (openId) => set({ openId }),
+      setTarget: (target) => set({ target }),
       setRecovery: (recovery) => set({ recovery }),
       setProcessing: (processing) => set({ processing }),
       openResult: (id) => { set({ menuOpen: false }); router.push(`/result/${id}` as any); },

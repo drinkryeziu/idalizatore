@@ -88,7 +88,7 @@ export function Ideas() {
     try { const r = await analyzeIdea(i); setReport(i.id, r); openResult(i.id); }
     catch (e: any) {
       const code = e instanceof ApiError ? e.status : 0;
-      say(code === 402 ? 'You’ve reached this month’s limit of analyzed ideas.' : code === 429 ? 'Too many requests right now. Try the AI button again in a minute.' : code === 403 ? e.message : 'The analysis didn’t finish. Tap the AI button to try again.', true);
+      say(code === 402 ? 'You’ve used all your free analyzed ideas. Upgrade to continue.' : code === 429 ? 'Too many requests right now. Try the AI button again in a minute.' : code === 403 ? e.message : 'The analysis didn’t finish. Tap the AI button to try again.', true);
     } finally { setBusy(null); useApp.getState().setProcessing(null); }
   }
   async function attach(id: string, source: 'library' | 'camera') {

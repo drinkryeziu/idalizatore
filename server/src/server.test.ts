@@ -10,7 +10,7 @@ import { AddressInfo } from 'node:net';
 import { server } from './index';
 import { rateLimit } from './limits';
 
-const FREE_LIMIT = 10; // the Free plan: 10 analyzed ideas a month (enforced in the database; mocked here)
+const FREE_LIMIT = 10; // the Free plan: 10 analyzed ideas in total (enforced in the database; mocked here)
 const REPORT = { language: 'en', languageName: 'English', caption: 'The forecasted success rate.', title: 'Roof App', score: 62, verdict: 'Promising, with risks',
   factors: [{ label: 'Demand', score: 70 }], chart: null, similar: null, equipment: null,
   sections: [{ title: 'Concept', blocks: [{ kind: 'paragraph', text: 'Hello.' }] }] };

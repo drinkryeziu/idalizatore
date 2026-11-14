@@ -43,7 +43,7 @@ export function Billing() {
               <Text style={[typo.body15, { color: color.inkSoft, marginTop: 2, marginBottom: space[3] }]}>{cur.plan === 'free' ? 'No payment needed.' : `${money(plan.month)} a month`}</Text>
               <View style={{ marginBottom: space[3] }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space[2], marginBottom: 6 }}>
-                  <Text style={[typo.body14, { color: color.ink }]}>Analyzed ideas this month</Text>
+                  <Text style={[typo.body14, { color: color.ink }]}>{cur.plan === 'free' ? 'Analyzed ideas' : 'Analyzed ideas this month'}</Text>
                   <Text style={[typo.body14m, { color: color.ink }]}>{cur.limit ? `${cur.used} of ${cur.limit}` : `${cur.used} · unlimited`}</Text>
                 </View>
                 <View style={{ height: 6, borderRadius: radius.full, backgroundColor: color.paper, overflow: 'hidden' }}>

@@ -119,13 +119,13 @@ export function Ideas() {
               onAdd={() => addImageMenu(i.id)} onEdit={() => setEditing(editing === i.id ? null : i.id)} onEndEdit={() => setEditing(null)}
               onChangeText={(t) => updateTranscript(i.id, t)} onAnalyze={() => analyze(i)} onRemoveImage={(mid) => { const m = i.images.find((x) => x.id === mid); removeImage(i.id, mid); if (m) deleteImageFiles([m]); }} />
           )} />
-        <View style={{ alignItems: 'center', marginHorizontal: -space[4], paddingTop: space[1], borderTopWidth: 1, borderTopColor: color.track }}>
+        <View style={{ alignItems: 'center', justifyContent: 'center', marginHorizontal: -space[4], paddingVertical: space[5], borderTopWidth: 1, borderTopColor: color.track }}>
           <RecordButton tone="paper" recording={v.recording} label={v.recording ? 'Stop recording' : 'Start recording'} {...v.micProps} />
-          <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.inkSoft, textAlign: 'center', minHeight: 16 }]}>
-            {v.recording ? 'Press to stop recording'
-              : targetIdea ? <>Press to add to {targetIdea.title} · <Text accessibilityRole="button" onPress={() => setTarget(null)} style={{ textDecorationLine: 'underline' }}>Cancel</Text></>
-              : v.hint}
-          </Text>
+          {targetIdea && !v.recording ? (
+            <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.inkSoft, textAlign: 'center', marginTop: space[3] }]}>
+              Press to add to {targetIdea.title} · <Text accessibilityRole="button" onPress={() => setTarget(null)} style={{ textDecorationLine: 'underline' }}>Cancel</Text>
+            </Text>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Screen>

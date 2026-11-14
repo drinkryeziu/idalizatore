@@ -15,14 +15,14 @@ export function Record() {
         {v.recording ? (
           <View style={{ marginTop: space[4] }} accessibilityLiveRegion="polite">
             <Text style={[typo.body19, { marginLeft: space[20], paddingRight: space[4], color: color.paper, opacity: 0.75, fontStyle: 'italic' }]}>
-              {v.canHold ? 'Listening… let go of the mic when you’re done.' : 'Listening… tap the mic when you’re done.'}
+              Listening… press the mic when you’re done.
             </Text>
           </View>
         ) : null}
         <View style={{ flex: 1, minHeight: space[6], justifyContent: 'center', marginHorizontal: -space[4] }}>{v.recording ? <Waveform height={160} /> : null}</View>
-        <View style={{ alignItems: 'center', gap: space[1], paddingBottom: space[10] }}>
-          <RecordButton recording={v.recording} label={v.canHold ? 'Hold to record' : v.recording ? 'Stop recording' : 'Start recording'} {...v.micProps} />
-          <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.paper, textAlign: 'center', minHeight: 16 }]}>{v.hint}</Text>
+        <View style={{ alignItems: 'center', gap: space[3], paddingBottom: space[10] }}>
+          <RecordButton recording={v.recording} label={v.recording ? 'Stop recording' : 'Start recording'} {...v.micProps} />
+          <Text accessibilityLiveRegion="polite" style={{ fontSize: 10, lineHeight: 12, fontFamily: Platform.OS === 'web' ? 'Arial, sans-serif' : undefined, color: color.paper, textAlign: 'center', minHeight: 16 }}>{v.hint}</Text>
         </View>
       </KeyboardAvoidingView>
     </Screen>

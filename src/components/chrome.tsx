@@ -1,10 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Animated, Easing, LayoutChangeEvent, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Polyline } from 'react-native-svg';
-import { color, font, size, space, typo } from '../theme';
+import Svg, { Polyline, SvgXml } from 'react-native-svg';
+import { MIC_START, MIC_STOP } from '../recordArt';
+import { color, font, space, typo } from '../theme';
 import { useApp } from '../store';
-import { Icon, Logo } from './Icon';
+import { Logo } from './Icon';
 import { IconBtn } from './ui';
 
 /** The prototype's screen: violet or paper ground with 16 px padding. */
@@ -43,28 +44,15 @@ export function Hero({ children, markSize = 60, padLeft = 80, fontSize }: { chil
   );
 }
 
-/** Hold-to-record button: a ring that fills with a pulsing halo while recording. */
-export function RecordButton({ recording, tone = 'violet', label, ...press }: { recording: boolean; tone?: 'violet' | 'paper'; label: string; onPressIn?: () => void; onPressOut?: () => void; onPress?: () => void }) {
-  const [halo] = useState(() => new Animated.Value(0));
-  const [pulse] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    Animated.timing(halo, { toValue: recording ? 1 : 0, duration: 240, useNativeDriver: true }).start();
-    if (!recording) { pulse.setValue(0); return; }
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true })]));
-    loop.start();
-    return () => loop.stop();
-  }, [recording, halo, pulse]);
-  const ring = tone === 'violet' ? color.paper : color.violet;
-  const core = recording ? size.recordCore : size.record;
+/** Record button from the Figma "Start / Stop" mockup: a violet mic (press to record) that turns red (press to stop). */
+export function RecordButton({ recording, label, ...press }: { recording: boolean; tone?: 'violet' | 'paper'; label: string; onPress?: () => void }) {
+  // The art is 110 px (start) or 96 px (stop) wide around a 64 px disc; these offsets centre the disc in the 64 px slot.
+  const art = recording ? { xml: MIC_STOP, w: 96, left: -16, top: -20 } : { xml: MIC_START, w: 110, left: -23, top: -15 };
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: recording }} {...press}
-      style={[{ width: size.recordHalo, height: size.recordHalo, alignItems: 'center', justifyContent: 'center' }, Platform.OS === 'web' ? ({ userSelect: 'none', touchAction: 'none' } as any) : null]}>
-      <Animated.View style={{ position: 'absolute', width: size.recordHalo, height: size.recordHalo, borderRadius: size.recordHalo, backgroundColor: color.violetDeep, opacity: halo,
-        transform: [{ scale: Animated.multiply(halo.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }), pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] })) }] }} />
-      <View style={{ width: core, height: core, borderRadius: core, borderWidth: 5, alignItems: 'center', justifyContent: 'center', borderColor: recording ? color.violet : ring, backgroundColor: recording ? color.violet : 'transparent' }}>
-        <Icon name="mic-filled" size={32} color={recording ? color.paper : tone === 'violet' ? color.paper : color.violet} />
+      style={[{ width: 64, height: 64 }, Platform.OS === 'web' ? ({ userSelect: 'none', touchAction: 'none', cursor: 'pointer' } as any) : null]}>
+      <View pointerEvents="none" style={{ position: 'absolute', left: art.left, top: art.top, width: art.w, height: art.w }}>
+        <SvgXml xml={art.xml} width={art.w} height={art.w} />
       </View>
     </Pressable>
   );

@@ -112,7 +112,7 @@ export function Ideas() {
           style={[{ height: 44, marginTop: space[3], marginBottom: space[5], borderRadius: radius.full, backgroundColor: color.field, textAlign: 'center', fontFamily: font.regular, fontSize: 17, color: color.ink }, web({ outlineStyle: 'none' })]} />
         <FlatList data={list} keyExtractor={(i) => i.id} style={{ flex: 1, marginHorizontal: -space[4] }} contentContainerStyle={{ paddingHorizontal: space[4], paddingBottom: space[4] }}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />} keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<Text style={[typo.body19, { fontSize: 17, textAlign: 'center', color: color.inkSoft, marginVertical: space[6] }]}>{ideas.length ? `No ideas match “${q}”.` : 'No ideas yet. Hold the mic below to record one.'}</Text>}
+          ListEmptyComponent={<Text style={[typo.body19, { fontSize: 17, textAlign: 'center', color: color.inkSoft, marginVertical: space[6] }]}>{ideas.length ? `No ideas match “${q}”.` : 'No ideas yet. Press the mic below to record one.'}</Text>}
           renderItem={({ item: i }) => (
             <IdeaCard idea={i} open={openId === i.id} editing={editing === i.id} analyzing={busy === i.id}
               onToggle={() => { setOpenId(openId === i.id ? null : i.id); if (editing === i.id) setEditing(null); }}
@@ -120,10 +120,10 @@ export function Ideas() {
               onChangeText={(t) => updateTranscript(i.id, t)} onAnalyze={() => analyze(i)} onRemoveImage={(mid) => { const m = i.images.find((x) => x.id === mid); removeImage(i.id, mid); if (m) deleteImageFiles([m]); }} />
           )} />
         <View style={{ alignItems: 'center', marginHorizontal: -space[4], paddingTop: space[1], borderTopWidth: 1, borderTopColor: color.track }}>
-          <RecordButton tone="paper" recording={v.recording} label={v.canHold ? 'Hold to record' : 'Start recording'} {...v.micProps} />
+          <RecordButton tone="paper" recording={v.recording} label={v.recording ? 'Stop recording' : 'Start recording'} {...v.micProps} />
           <Text accessibilityLiveRegion="polite" style={[typo.nav, { color: color.inkSoft, textAlign: 'center', minHeight: 16 }]}>
-            {v.recording ? (v.canHold ? 'Listening… release to stop' : 'Listening… tap to stop')
-              : targetIdea ? <>Hold to add to {targetIdea.title} · <Text accessibilityRole="button" onPress={() => setTarget(null)} style={{ textDecorationLine: 'underline' }}>Cancel</Text></>
+            {v.recording ? 'Press to stop recording'
+              : targetIdea ? <>Press to add to {targetIdea.title} · <Text accessibilityRole="button" onPress={() => setTarget(null)} style={{ textDecorationLine: 'underline' }}>Cancel</Text></>
               : v.hint}
           </Text>
         </View>

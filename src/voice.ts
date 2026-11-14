@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Platform } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
@@ -15,9 +14,7 @@ import { useApp } from './store';
 export function useVoice(targetId: string | null) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [recording, setRecording] = useState(false);
-  const [screenReader, setScreenReader] = useState(false);
   const rec = useRef(false), startedAt = useRef(0), starting = useRef<Promise<void> | null>(null);
-  useEffect(() => { if (Platform.OS !== 'web') AccessibilityInfo.isScreenReaderEnabled().then(setScreenReader); }, []);
   const say = useApp((s) => s.say);
 
   const fail = useCallback((code: 'denied' | 'error') => {
@@ -47,7 +44,7 @@ export function useVoice(targetId: string | null) {
     if (!startedAt.current) return;
     try { await recorder.stop(); await setAudioModeAsync({ allowsRecording: false }); } catch { /* already stopped */ }
     const held = Date.now() - startedAt.current; startedAt.current = 0;
-    if (held < 600) { say('I didn’t catch an idea. Keep the mic pressed while you talk.'); return; }
+    if (held < 600) { say('I didn’t catch an idea. Press the mic, speak, then press it again.'); return; }
     const uri = recorder.uri;
     if (!uri) { say('I didn’t catch an idea. Try again.'); return; }
     router.navigate('/ideas'); // straight to Recorded Ideas; the new idea appears there when it is ready
@@ -60,10 +57,8 @@ export function useVoice(targetId: string | null) {
     } catch (e: any) { useApp.getState().setProcessing(null); say(e?.message || 'The recording couldn’t be processed.', true); }
   }, [targetId, recorder, say]);
 
-  const canHold = !screenReader;
-  const micProps = canHold
-    ? { onPressIn: start, onPressOut: stop }
-    : { onPress: () => { if (rec.current) stop(); else start(); } };
-  const hint = recording ? (canHold ? 'Release to stop' : 'Tap to stop') : canHold ? 'Hold to record' : 'Tap to record';
-  return { recording, canHold, micProps, hint };
+  // Press once to start, press again to stop (the Figma "Start / Stop" mockup).
+  const micProps = { onPress: () => { if (rec.current) stop(); else start(); } };
+  const hint = recording ? 'Press to stop recording' : 'Press to record';
+  return { recording, micProps, hint };
 }

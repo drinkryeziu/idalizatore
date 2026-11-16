@@ -19,7 +19,8 @@ export function MenuDrawer() {
   const { menuOpen, setMenu, go, ideas, user } = useApp();
   const path = usePathname();
   const route = routeFromPath(path) ?? (path.startsWith('/result') ? 'analyzed' : path.startsWith('/billing') ? 'settings' : null);
-  const width = Math.min(useWindowDimensions().width, 430); // matches the phone frame on the web
+  const frame = Math.min(useWindowDimensions().width, 430); // matches the phone frame on the web
+  const width = Math.round(frame * 0.85); // the drawer covers 85% of the screen; the rest shows the page, dimmed
   const [x] = useState(() => new Animated.Value(width));
   const [mounted, setMounted] = useState(false);
   const [reduce, setReduce] = useState(false);
@@ -37,7 +38,11 @@ export function MenuDrawer() {
   if (!mounted || !user) return null;
   const count = (r: Route) => (r === 'ideas' ? ideas.length : r === 'analyzed' ? ideas.filter((i) => i.report).length : null);
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 9, backgroundColor: color.paper, paddingHorizontal: space[4], transform: [{ translateX: x }] }]} accessibilityViewIsModal>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9 }]} accessibilityViewIsModal>
+    <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(37, 37, 37, 0.45)', opacity: x.interpolate({ inputRange: [0, width], outputRange: [1, 0], extrapolate: 'clamp' }) }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close menu" onPress={() => setMenu(false)} style={StyleSheet.absoluteFill} />
+    </Animated.View>
+    <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width, backgroundColor: color.paper, paddingHorizontal: space[4], transform: [{ translateX: x }], boxShadow: '-12px 0 40px rgba(37, 37, 37, 0.18)' } as any}>
       <SafeAreaView style={{ flex: 1, paddingTop: space[4] }}>{/* same top spacing as the page headers, so the X lines up with the X on Settings */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: size.touch, paddingTop: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
@@ -73,5 +78,6 @@ export function MenuDrawer() {
         </ScrollView>
       </SafeAreaView>
     </Animated.View>
+    </View>
   );
 }
